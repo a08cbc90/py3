@@ -1,3 +1,5 @@
-*config.json
+conf/config.json
 *.py[cod]
 *.swp
+log/
+tmp/
