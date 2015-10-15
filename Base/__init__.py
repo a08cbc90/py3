@@ -19,14 +19,27 @@ class Util():
     """
 
     def __init__(self):
-        pass
+        """ BaseEnv
+        最低限の設定であり、他のinitで上書きしない前提の属性とする
+        Util:
+            i_conf    :  コンフィグファイル位置(あまり変えたくない)'./conf/config.json'
+            i_log_dir :  ログディレクトリ
+            i_conf_dir: コンフィグディレクトリ(あまり変えたくない)'./conf'
+            i_tmp_dir :  一時ディレクトリ
+        """
+        self.i_conf = 'conf/config.json'
+        j = self.rj(self.i_conf)
+        for atr, val in j['Util'].items():
+            setattr(self, atr, val)
+
+        for dir in [self.i_log_dir, self.i_conf_dir, self.i_tmp_dir]:
+            self.make_dir(dir)
 
 
     def json_valid(self, json_str=""):
         """ JSONとして成立して無ければFalse
         JSONとして正しいstringならTrueを返す
         """
-
         if not json_str:
             """ 変数が存在しない場合 True """
             return False
@@ -91,8 +104,9 @@ class Util():
         return os.path.isfile(filepath)
 
 
-    def json_read(self, filepath='/dev/null'):
-        """ filepath の中身がjsonだと仮定して取得を試み
+    def rj(self, filepath='/dev/null'):
+        """ ReadJson
+        filepath の中身がjsonだと仮定して取得を試み
         読み込んだ内容を返す。
         試験内容:
             filepathを入れてない場合: None(正常)
@@ -254,6 +268,43 @@ class Util():
         return int(os.stat(path).st_mtime - int(t))
 
 import http.cookiejar, urllib, gzip, datetime, time, socket
+class HttpClient(Util):
+    """ 汎用的なhttp[s]通信ができるClassを目指す
+    """
+    def __init__(self):
+        """
+        ht_url: デフォルトのURL
+        ht_refferer:    デフォルトのリファラ
+        ht_output_path: デフォルトの保存先
+        ht_ua:  デフォルトのクライアント
+        ht_cookie: デフォルトのクッキーファイル
+        ht_log_level: デフォルトのログレベル
+        ht_log_path: デフォルトのログ保存位置
+        ht_header: 実際に使用するヘッダー共通部分
+        ht_cookie_jarnal: Mozilla形式のクッキー定義
+        ht_counter: このクラスを使用した際の履歴を記憶する。
+        """
+        Util.__init__(self)
+        j = self.rj(self.i_conf)
+        for x, y in j['HttpClient'].items():
+            setattr(self, x, y)
+
+        self.ht_log_path = self.i_log_dir + '/' + self.ht_log_file
+        self.ht_cookie   = self.i_tmp_dir + '/' + self.ht_cookie
+        self.ht_header['User-Agent'] = self.ht_ua
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
