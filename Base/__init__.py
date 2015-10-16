@@ -274,14 +274,14 @@ class HttpClient(Util):
     def __init__(self):
         """ http[s]用の変数
         ht_url: デフォルトのURL
-        ht_refferer:    デフォルトのリファラ
+        ht_referer:    デフォルトのリファラ
         ht_output_path: デフォルトの保存先
         ht_ua:  デフォルトのクライアント
         ht_cookie: デフォルトのクッキーファイル
+        ht_cookie_jarnal: Mozilla形式のクッキー定義
         ht_log_level: デフォルトのログレベル
         ht_log_path: デフォルトのログ保存位置
         ht_header: 実際に使用するヘッダー共通部分
-        ht_cookie_jarnal: Mozilla形式のクッキー定義
         ht_counter: このクラスを使用した際の履歴を記憶する。
         """
         Util.__init__(self)
@@ -295,6 +295,7 @@ class HttpClient(Util):
         self.ht_cookie   = self.i_tmp_dir + '/' + self.ht_cookie
         """ ヘッダーにUserAgentの項目を追記 """
         self.ht_header['User-Agent'] = self.ht_ua
+        self.ht_cookie_jarnal = http.cookiejar.MozillaCookieJar()
 
 
     def ht_counter_print(self):
@@ -313,10 +314,163 @@ class HttpClient(Util):
         return None
 
 
+    def ht_load_cookie(self, *unknown_args, **unknown_dicts):
+        """ クッキーを読み込む
+        """
+        if self.file_exist(self.ht_cookie):
+            self.ht_cookie_jarnal.load(self.ht_cookie, ignore_discard=True, ignore_expires=False)
 
 
+    def ht_save_cookie(self, *unknown_args, **unknown_dicts):
+        """ クッキーを保存する
+        """
+        if self.ht_cookie_jarnal:
+            self.ht_cookie_jarnal.save(self.ht_cookie, ignore_discard=True, ignore_expires=False)
 
 
+    def download(self, url=None, referer=None, output=None, post_string=None):
+        """ クッキー対応ダウンロード
+        post_string を指定していない場合GETとしてダウンロードする
+        output をしていない場合ファイル保存しない
+        ダウンロードしたデータは return で返す。
+        """
+        """ ダウンロード回数を1回増やす """
+        self.ht_counter['total'] += 1
+        """ url 指定が無ければ self.ht_url を使用する """
+        url = url or self.ht_url
+        if not url:
+            """ それでもurl指定が無い場合 """
+            """ エラー回数を1回増やす """
+            self.ht_counter['fail'] += 1
+            """ エラー内容の記載 """
+            self.ht_counter['fail_description'].append((date_time, -4, "url not specified."))
+            return None
+
+        """ referer 指定が無ければ self.ht_referer を使用する """
+        referer = referer or self.ht_referer or None
+        """ cookie を ファイルから読み込む"""
+        self.ht_load_cookie()
+        """ クッキーの組み込み準備 (Mozila形式) """
+        urhcp = urllib.request.HTTPCookieProcessor(self.ht_cookie_jarnal)
+        """ OpenerDirectorインスタンスの作成 """
+        urbo  = urllib.request.build_opener(urhcp)
+        """ OpenerDirectorインスタンスをurlopen用に連結 """
+        urio  = urllib.request.install_opener(urbo)
+
+        """ デフォルトのヘッダーテンプレートをコピー(そのまま使うと後が大変) """
+        headers = dict(self.ht_header)
+
+        """ POST用のオブジェクト初期化 """
+        post_obj = None
+
+        if post_string: # POSTデータがある場合
+            """ POSTデータがある場合 """
+            """ POSTダウンロード回数を1回増やす """
+            self.ht_counter['post'] += 1
+            if type(post_string) is bytes:
+                """ bytes型ならそのまま(json形式を意識) """
+                post_obj = post_string
+                if self.json_valid(post_string):
+                    """ 中身がJsonの場合 """
+                    """ header に json 追加 """
+                    headers['Content-Type'] = 'application/json'
+            elif type(post_string) is str:
+                """ str型ならbytes型に変換する """
+                post_obj = post_string.encode()
+                """post_string がJsonとして成立するかを確認する必要がある"""
+                if self.json_valid(post_string):
+                    """ 中身がJsonの場合 """
+                    """ header に json 追加 """
+                    headers['Content-Type'] = 'application/json'
+            else:
+                """ POST用のオブジェクトを作成 """
+                post_obj = urllib.parse.urlencode(post_string).encode(encoding='ascii')
+
+        if referer:
+            """ リファラーがある場合 """
+            """ header に referer 追加 """
+            headers['Referer'] = referer
+
+        """ エラーがあった場合に備えて時刻の取得 """
+        date_time = datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S')
+
+        for retry in range(self.ht_retry - 1, -1, -1):
+            if self.download_interval:
+                """ ダウンロード間隔が定められている場合はここで調整 """
+                time.sleep(self.download_interval)
+
+            try:
+                """ リクエストobj作成 """
+                urr = urllib.request.Request(url, post_obj, headers)
+                """ open_obj作成(この段階で各serverにはSYNが飛んでる) """
+                uru = urllib.request.urlopen(urr, timeout=self.ht_retry)
+
+            except urllib.error.HTTPError as err:
+                """ 404 や 500などのhttp-responseでErrorの場合 """
+                """ エラー回数を1回増やす """
+                self.ht_counter['fail'] += 1
+                """ エラー内容の記載 """
+                self.ht_counter['fail_description'].append((date_time, err.code, err.reason))
+                """ エラー内容の出力 """
+                self.ht_counter_print()
+                if err.code == 404:
+                    """ 404 の場合は何回アクセスしても無駄なので諦める """
+                    return None
+                if retry:
+                    """ retry が0を示していない場合はループの先頭に戻る """
+                    continue
+                """ retry == 0 なので諦める """
+                return None
+
+            except urllib.error.URLError as err:
+                """ SYNから？タイムアウトやドメインが引けなかった場合 """
+                """ エラー回数を1回増やす """
+                self.ht_counter['fail'] += 1
+                """ エラー内容の記載 (-2に意味はないｗ)"""
+                self.ht_counter['fail_description'].append((date_time, -2, err.reason))
+                """ エラー内容の出力 """
+                self.ht_counter_print()
+                """ ここを retry/continue にするか return にするかは悩みどころ """
+                return None
+
+            except socket.timeout:
+                """ socket.timeout の場合 """
+                """ エラー回数を1回増やす """
+                self.ht_counter['fail'] += 1
+                """ エラー内容の記載 (-3に意味はないｗ)"""
+                self.ht_counter['fail_description'].append((date_time, -3, "socket.timeout"))
+                """ エラー内容の出力 """
+                self.ht_counter_print()
+                if retry:
+                    """ retry が0を示していない場合はループの先頭に戻る """
+                    continue
+                """ retry == 0 なので諦める """
+                return None
+
+            except:
+                """  その他未知のエラーはその都度対応すること """
+                print("unknown Error occurd")
+                """ プログラムが止まる """
+                raise
+
+        """ サーバ側のchar-setが未指定ならUTF8 """
+        ururhgcc = uru.headers.get_content_charset() or 'utf-8'
+
+        if uru.info().get("Content-Encoding") == "gzip":
+            """ zip エンコードのものは 解凍して差し上げる """
+            download_data = gzip.decompress(uru.read())
+        else:
+            """ そうでもないなら 普通に展開 """
+            download_data = uru.read()
+
+        if output:
+            """ 出力指定がある場合には ファイルに保存する """
+            with open(output, 'wb') as fp:
+                fp.write(download_data)
+
+        """ その都度cookieを更新保存する """
+        self.ht_save_cookie()
+        return download_data
 
 
 
