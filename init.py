@@ -12,6 +12,7 @@ if __name__ != '__main__':
 import Base
 B = Base.Util()
 C = Base.HttpClient()
+print(C.ht_counter_print())
 
 
 

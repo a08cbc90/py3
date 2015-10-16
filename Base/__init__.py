@@ -17,7 +17,6 @@ class Util():
     """ Utilは他の Classes が継承しやすいように初めのほうに
     書く必要がある。
     """
-
     def __init__(self):
         """ BaseEnv
         最低限の設定であり、他のinitで上書きしない前提の属性とする
@@ -242,6 +241,7 @@ class Util():
 
         return data
 
+
     def rm(self, filepath=None):
         """ REmove
         ファイルを削除する。消えたかどうかは判定しない
@@ -272,7 +272,7 @@ class HttpClient(Util):
     """ 汎用的なhttp[s]通信ができるClassを目指す
     """
     def __init__(self):
-        """
+        """ http[s]用の変数
         ht_url: デフォルトのURL
         ht_refferer:    デフォルトのリファラ
         ht_output_path: デフォルトの保存先
@@ -289,10 +289,28 @@ class HttpClient(Util):
         for x, y in j['HttpClient'].items():
             setattr(self, x, y)
 
+        """ ht_log_path = './log/foobar.log' """
         self.ht_log_path = self.i_log_dir + '/' + self.ht_log_file
+        """ ht_cookie   = './tmp/foobaz.cookie' """
         self.ht_cookie   = self.i_tmp_dir + '/' + self.ht_cookie
+        """ ヘッダーにUserAgentの項目を追記 """
         self.ht_header['User-Agent'] = self.ht_ua
 
+
+    def ht_counter_print(self):
+        """ 
+        ht_log_level 1以上 このクラスの使用履歴をプリントする
+        ht_log_level 2以上 エラーがあればその詳細も出力する
+        """
+        if self.ht_log_level:
+            for i in ["total", "post", "fail"]:
+                print("%s:\t\t%d" %(i, self.ht_counter[i]))
+
+            if self.ht_log_level >= 2:
+                for error_ary in self.ht_counter['fail_description']:
+                    print("%s ErrCode: %d, Descroption: '%s'" % error_ary)
+        
+        return None
 
 
 
