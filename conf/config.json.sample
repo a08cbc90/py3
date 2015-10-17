@@ -1,3 +1,67 @@
 {
+    "Base.Util": {
+        "i_conf"    : "# このファイル",
+        "i_conf"    : "./conf/config.json",
+        "i_log_dir" : "# logディレクトリ",
+        "i_log_dir" : "./log",
+        "i_conf_dir": "# confディレクトリ(このディレクトリ)",
+        "i_conf_dir": "./conf",
+        "i_tmp_dir" : "# 一時ディレクトリ",
+        "i_tmp_dir" : "./tmp"
+    },
+    "Base.HttpClient": {
+       "ht_url"             : "# ダウンロードするURL(デフォルト)",
+       "ht_url"             : "https://github.com/",
+       "ht_referer"         : "# ダウンロードする際のリファラ(デフォルト)",
+       "ht_referer"         : "http://google.com/",
+       "ht_output_path"     : "# ダウンロードが完了したときのファイルパス(デフォルト)",
+       "ht_output_path"     : "/dev/null",
+       "ht_ua"              : "# ユーザエージェント(デフォルト)",
+       "ht_ua"              : "Mozilla/5.0",
+       "ht_cookie"          : "# クッキーファイル名(デフォルト)",
+       "ht_cookie"          : "base.cookie",
+       "ht_cookie_jarnal"   : "# クッキーオブジェクト初期値(デフォルト)",
+       "ht_cookie_jarnal"   : null,
+       "ht_log_file"        : "# Base.HttpClientクラスが書き込むログ(デフォルト)",
+       "ht_log_file"        : "BaseHttpClient.log",
+       "ht_retry"           : "# リクエストの再試行回数(デフォルト)",
+       "ht_retry"           : 3,
+       "ht_header"          : "# クライアントヘッダ(デフォルト)",
+       "ht_header"          : {
+            "Accept"            : "*/*",
+            "Accept-Language"   : "ja,en-US;q=0.7,en;q=0.3",
+            "Accept-Encoding"   : "gzip, deflate",
+            "Connection"        : "keep-alive"
+       },
+       "ht_counter"         : "# ダウンロード統計",
+       "ht_counter"         : {
+            "total"             : 0,
+            "post"              : 0,
+            "fail"              : 0,
+            "fail_description"  : []
+       },
+       "download_interval": "# ダウンロードの時間間隔[sec](デフォルト)",
+       "download_interval": 5
+    },
+    "K2.Gen": {
+        "cookie"    : "# K2で使用するクッキーファイル名",
+        "logfile"   : "# K2で使用するログファイル名",
+        "l_host"    : "# ログイン用ホスト名",
+        "i_host"    : "# json通信用ホスト名",
+        "domain"    : "# 本プログラムの対象ドメイン",
+        "dat_dir"   : "# アーカイブデーター用ディレクトリ",
+        "json_sx"   : "# 保存データのサフィックス",
+        "li_tpsx"   : "# ログインディレクトリ部分",
+        "li_rfsx"   : "# ログインディレクトリ部分(リファラ)",
+        "li_sec_f"  : "# 暗号化要素の検出のための外部ファイル名",
+        "li_sec_d"  : "# 暗号化要素の検出のための外部ファイルの要素1",
+        "li_sec_s"  : "# 暗号化要素の検出のための外部ファイルの要素2",
+        "li_pat"    : "# ログインページのネクストホップ検出パターン",
+        "li_pos_b"  : "# POSTデータの配列",
+        "li_pos_a"  : "# 要素つまみ食い用",
+        "li_myp"    : "# ログイン後のトップページ",
+        "li_n_pat"  : "# ログイン後のネクストホップアドレス正常性確認検出パターン",
+        "proto"     : "# 本プログラムで使用するプロトコル",
+    }
 }
 
