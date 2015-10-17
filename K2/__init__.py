@@ -35,6 +35,8 @@ class Gen(
         self.k2_js_f1       = self.k2_js_fpx + 'k2_3' +  self.k2_js_fsx
         self.k2_re          = re.I | re.M | re.U
         self.k2_login_post  = self.login_post_gen()
+        self.k2_logfile     = self.i_log_dir + '/' + self.kg_logfile
+        self.logger_add_file(self.k2_logfile)
 
 
     def login_post_gen(self):
@@ -109,8 +111,7 @@ class Gen(
         """ 認証の成功を確認する """
         rs_obj = re.search(self.kg_li_pat, data, self.k2_re)
         if not rs_obj:
-            """ ここは将来Loggingすること """
-            print("ログインに失敗すた。")
+            self.loge("ログインに失敗すた。")
             exit(4)
 
         """ ネクストホップアドレスの割り当て """
@@ -124,7 +125,7 @@ class Gen(
 
         """ ネクストホップアドレスの正常性確認 """
         if not re.search(self.kg_li_n_pat, data, self.k2_re):
-            print("ネクストホップアドレス取得に失敗すた。")
+            self.loge("ネクストホップアドレス取得に失敗すた。")
             exit(5)
 
         return True

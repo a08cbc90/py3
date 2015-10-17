@@ -12,7 +12,7 @@ http
 
 """
 
-import json, os, re, gzip
+import json, os, re, gzip, logging
 class Util():
     """ Utilは他の Classes が継承しやすいように初めのほうに
     書く必要がある。
@@ -33,6 +33,72 @@ class Util():
 
         for dir in [self.i_log_dir, self.i_conf_dir, self.i_tmp_dir]:
             self.make_dir(dir)
+
+        self.L = logging.getLogger('Util')
+        self.logger_init()
+        self.i_log_path = self.i_log_dir + '/BaseUtil.log'
+        self.logger_add_file(self.i_log_path)
+
+
+    def logger_init(self):
+        """ ロガーを生成する関数 """
+        """ ロギングフォーマッタ(共通) """
+        self.LF = logging.Formatter(
+            fmt     = '%(asctime)s %(levelname)s: %(message)s',
+            datefmt = '%y/%m/%d %H:%M:%S'
+        )
+
+        """ ロガーを生成 """
+        self.L = logging.getLogger('util')
+        """ このロガーが判断するエラーレベル """
+        self.L.setLevel(logging.DEBUG)
+
+        """ STDERRの設定 """
+        create_logging_handler_stderr = logging.StreamHandler()
+        """ STDERRが判断するエラーレベル """
+        create_logging_handler_stderr.setLevel(logging.DEBUG)
+        """ このハンドラにフォーマッタ(共通)を登録する """
+        create_logging_handler_stderr.setFormatter(self.LF)
+
+        """ STDERRを生成したロガーに組み込む """
+        self.L.addHandler(create_logging_handler_stderr)
+        return True
+
+
+    def logger_add_file(self, filepath=None):
+        """ STDERRに出力されるロガーにファイルロギングも追加する """
+        if not filepath:
+            return False
+        """ ハンドラの作成(ファイルハンドラ) """
+        create_logging_handler_file = logging.FileHandler(filename=filepath, mode='a')
+        """ このハンドラが判断するエラーレベル """
+        create_logging_handler_file.setLevel(logging.INFO)
+        """ このハンドラにフォーマッタ(共通)を登録する """
+        create_logging_handler_file.setFormatter(self.LF)
+        """ このハンドラをロガーに組み込む """
+        self.L.addHandler(create_logging_handler_file)
+        return True
+
+
+    def logd(self, string):
+        """ ロギング
+        self.i_log_path にロギングする(DEBUG)
+        """
+        self.L.debug(string)
+
+
+    def loge(self, string):
+        """ ロギング&プリント
+        self.i_log_path にロギングする(ERROR)
+        """
+        self.L.error(string)
+
+
+    def logw(self, string):
+        """ ロギング&プリント
+        self.i_log_path にロギングする(WARNING)
+        """
+        self.L.warning(string)
 
 
     def json_valid(self, json_str=""):
@@ -267,6 +333,7 @@ class Util():
 
         return int(os.stat(path).st_mtime - int(t))
 
+
 import http.cookiejar, urllib, gzip, datetime, time, socket
 class HttpClient(Util):
     """ 汎用的なhttp[s]通信ができるClassを目指す
@@ -296,6 +363,7 @@ class HttpClient(Util):
         """ ヘッダーにUserAgentの項目を追記 """
         self.ht_header['User-Agent'] = self.ht_ua
         self.ht_cookie_jarnal = http.cookiejar.MozillaCookieJar()
+        self.logger_add_file(self.ht_log_path)
 
 
     def ht_counter_print(self):
@@ -305,11 +373,11 @@ class HttpClient(Util):
         """
         if self.ht_log_level:
             for i in ["total", "post", "fail"]:
-                print("%s:\t\t%d" %(i, self.ht_counter[i]))
+                self.logw("%s:\t\t%d" %(i, self.ht_counter[i]))
 
             if self.ht_log_level >= 2:
                 for error_ary in self.ht_counter['fail_description']:
-                    print("%s ErrCode: %d, Descroption: '%s'" % error_ary)
+                    self.logw("%s ErrCode: %d, Descroption: '%s'" % error_ary)
         
         return None
 
@@ -450,7 +518,7 @@ class HttpClient(Util):
 
             except:
                 """  その他未知のエラーはその都度対応すること """
-                print("unknown Error occurd")
+                self.loge("unknown Error occurd")
                 """ プログラムが止まる """
                 raise
 
