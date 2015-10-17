@@ -368,17 +368,14 @@ class HttpClient(Util):
 
     def ht_counter_print(self):
         """ 
-        ht_log_level 1以上 このクラスの使用履歴をプリントする
-        ht_log_level 2以上 エラーがあればその詳細も出力する
+        統計情報のサマリとエラーログを表示
         """
-        if self.ht_log_level:
-            for i in ["total", "post", "fail"]:
-                self.logw("%s:\t\t%d" %(i, self.ht_counter[i]))
+        for i in ["total", "post", "fail"]:
+            self.logw("%s:\t\t%d" %(i, self.ht_counter[i]))
 
-            if self.ht_log_level >= 2:
-                for error_ary in self.ht_counter['fail_description']:
-                    self.logw("%s ErrCode: %d, Descroption: '%s'" % error_ary)
-        
+        for error_ary in self.ht_counter['fail_description']:
+            self.logw("%s ErrCode: %d, Descroption: '%s'" % error_ary)
+
         return None
 
 
