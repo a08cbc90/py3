@@ -20,7 +20,7 @@ class Util():
     def __init__(self):
         """ BaseEnv
         最低限の設定であり、他のinitで上書きしない前提の属性とする
-        Util:
+        Base.Util:
             i_conf    :  コンフィグファイル位置(あまり変えたくない)'./conf/config.json'
             i_log_dir :  ログディレクトリ
             i_conf_dir: コンフィグディレクトリ(あまり変えたくない)'./conf'
@@ -28,7 +28,7 @@ class Util():
         """
         self.i_conf = 'conf/config.json'
         j = self.rj(self.i_conf)
-        for atr, val in j['Util'].items():
+        for atr, val in j['Base.Util'].items():
             setattr(self, atr, val)
 
         for dir in [self.i_log_dir, self.i_conf_dir, self.i_tmp_dir]:
@@ -286,7 +286,7 @@ class HttpClient(Util):
         """
         Util.__init__(self)
         j = self.rj(self.i_conf)
-        for x, y in j['HttpClient'].items():
+        for x, y in j['Base.HttpClient'].items():
             setattr(self, x, y)
 
         """ ht_log_path = './log/foobar.log' """
@@ -383,6 +383,7 @@ class HttpClient(Util):
                     """ header に json 追加 """
                     headers['Content-Type'] = 'application/json'
             else:
+                """ POSTオブジェクトが辞書形式の場合 """
                 """ POST用のオブジェクトを作成 """
                 post_obj = urllib.parse.urlencode(post_string).encode(encoding='ascii')
 
