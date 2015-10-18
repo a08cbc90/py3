@@ -33,12 +33,11 @@ class Symbols():
         """
         return datetime.datetime.now().strftime('%s000')
 
-
     def get_all_symboles(self):
         """ 全シンボルの取得
-        メインシンボル + 固有シンボル
+        固有シンボル + メインシンボル
         """
-        return [] + get_main_symboles()
+        return self.kds_c_symbols + self.get_main_symboles()
 
 
     def get_main_symboles(self):
