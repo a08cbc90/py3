@@ -12,6 +12,8 @@ if __name__ != '__main__':
 import K2
 C = K2.Gen()
 
+print(C.get_main_symboles())
+exit()
 print(C.klogin())
 print(C.ht_counter_print())
 
