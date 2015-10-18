@@ -3,13 +3,21 @@
 
 r"""
 K2.Gen
-    klogin()
+    login_post_gen(): ログインに必要なデータを作成
+    klogin(): ログインする
 """
 
+""" import Base-Modules """
 import Base
+""" import Sub-Modules """
+import K2.Downloads
+""" import Installed-Modules """
 import datetime, re, hashlib, base64
+
+
 class Gen(
     Base.HttpClient,
+    K2.Downloads.Symbols,
 ):
     """ 金のジェネレータークラス2号君
     きっと使用メモリは 将来12GBくらいになる。
@@ -19,6 +27,7 @@ class Gen(
         ドメイン名やら、データフォルダやらを書きまくるので少し長い。
         """
         Base.HttpClient.__init__(self)
+        K2.Downloads.Symbols.__init__(self)
         j = self.rj(self.i_conf)
         for x, y in j['K2.Gen'].items():
             x = "kg_" + x
@@ -129,6 +138,5 @@ class Gen(
             exit(5)
 
         return True
-
 
 
