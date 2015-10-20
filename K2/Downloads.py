@@ -24,6 +24,7 @@ class Symbols():
         for x, y in j['K2.Downloads.Symbols'].items():
             x = "kds_" + x
             setattr(self, x, y)
+        self.sym = {}
 
 
     def kds_sec(self):
@@ -33,15 +34,21 @@ class Symbols():
         """
         return datetime.datetime.now().strftime('%s000')
 
+
     def get_all_symboles(self):
         """ 全シンボルの取得
         固有シンボル + メインシンボル
+        ただし、多数のアクセス不可能なシンボルも混ざっていることに注意
         """
-        return self.kds_c_symbols + self.get_main_symboles()
+        if not 'all' in self.sym:
+            self.sym['all'] = self.kds_c_symbols + self.get_main_symboles()
+
+        return self.sym['all']
 
 
     def get_main_symboles(self):
         """ メインシンボルの全取得
+        ただし、多数のアクセス不可能なシンボルも混ざっていることに注意
         """
         """ GET SCR """
         j = self.download(
@@ -63,5 +70,18 @@ class Symbols():
         return sorted(jl[self.kds_model][self.kds_symbols].keys())
 
 
+
+    def get_accessible_symboles(self):
+        """ アクセス可能なシンボルの全取得
+        但し調査に時間がかかる。
+        そしてこの関数に意味があるのか。
+        """
+        ret = []
+        for s in self.get_all_symboles():
+            """ 実際に確認してみる """
+            #ret.insert(0, s)
+            ret.append(s)
+        
+        return ret
 
 

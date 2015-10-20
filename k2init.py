@@ -12,7 +12,7 @@ if __name__ != '__main__':
 import K2
 C = K2.Gen()
 
-print(C.get_all_symboles())
+print(C.get_accessible_symboles())
 exit()
 print(C.klogin())
 print(C.ht_counter_print())
