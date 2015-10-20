@@ -12,7 +12,9 @@ if __name__ != '__main__':
 import K2
 C = K2.Gen()
 
-print(C.get_accessible_symboles())
+g = C.get_accessible_symboles()
+h = C.download_k2_summary(g[1997])
+print(C.summary_picker(h))
 exit()
 print(C.klogin())
 print(C.ht_counter_print())

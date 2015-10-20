@@ -11,7 +11,7 @@ K2.Downloads.Jsons
     JSON関係のダウンロードをを行う(未実装!)
 """
 
-import datetime, json
+import datetime, json, re
 class Symbols():
     """ Symbol関係
     ダウンロードとか、割り当てとか
@@ -69,6 +69,41 @@ class Symbols():
         jl = json.loads(j)
         return sorted(jl[self.kds_model][self.kds_symbols].keys())
 
+
+    def download_k2_summary(self, symbol):
+        """ サマリページのダウンロードをし、成功したらデータを返す
+        """
+        s = self.download(
+            self.k2_jso_site + self.kds_sum_dir + symbol,
+            self.k2_jso_site + self.kds_sum_r_dir,
+        )
+        return s.decode()
+
+
+    def summary_picker(self, html):
+        """ サマリページから各種情報のスクレイピング処理
+        """
+        p = {}
+        """ sum_hkbの取得 """
+        r = re.search(self.kds_sum_hkb_re, html, self.k2_re)
+        if r:
+            p[self.kds_sum_hkb] = int(re.sub(r',', '', r.group(2)))
+        else:
+            """ sum_hkb取得に失敗 またはsum_hkb概念が無いsymbol """
+            p[self.kds_sum_hkb] = 0
+            p[self.kds_sum_jks] = 0
+
+        """ sum_secの取得 """
+        r = re.search(self.kds_sum_sec_re, html, self.k2_re)
+        if r:
+            p[self.kds_sum_sec] = re.sub(r',', '', r.group(1))
+            p[self.kds_sum_sec + '_'] = re.sub(r',', '', r.group(2))
+        else:
+            """ sum_sec取得に失敗 またはsum_sec概念が無いsymbol """
+            p[self.kds_sum_sec] = ''
+            p[self.kds_sum_sec + '_'] = ''
+            
+        return p
 
 
     def get_accessible_symboles(self):
