@@ -35,20 +35,22 @@ class Symbols():
         return datetime.datetime.now().strftime('%s000')
 
 
-    def get_all_symboles(self):
+    def get_all_symbols(self):
         """ 全シンボルの取得
+        アクセス数: (1回)
         固有シンボル + メインシンボル
         ただし、多数のアクセス不可能なシンボルも混ざっていることに注意
         """
         if not 'all' in self.sym:
-            self.sym['all'] = self.kds_c_symbols + self.get_main_symboles()
+            self.sym['all'] = self.kds_c_symbols + self.get_main_symbols()
 
         return self.sym['all']
 
 
-    def get_main_symboles(self):
+    def get_main_symbols(self):
         """ メインシンボルの全取得
         ただし、多数のアクセス不可能なシンボルも混ざっていることに注意
+        アクセス数: 1回
         """
         """ GET SCR """
         j = self.download(
@@ -72,51 +74,109 @@ class Symbols():
 
     def download_k2_summary(self, symbol):
         """ サマリページのダウンロードをし、成功したらデータを返す
+        アクセス数: 1回
         """
         s = self.download(
             self.k2_jso_site + self.kds_sum_dir + symbol,
             self.k2_jso_site + self.kds_sum_r_dir,
-        )
-        return s.decode()
+        ).decode()
+        return s
 
 
-    def summary_picker(self, html):
+    def summary_picker(self, html='', p={}):
         """ サマリページから各種情報のスクレイピング処理
+        html: html-script,
+        p: return-dictonary,
         """
-        p = {}
-        """ sum_hkbの取得 """
+        """ s_hkbの取得 """
         r = re.search(self.kds_sum_hkb_re, html, self.k2_re)
         if r:
-            p[self.kds_sum_hkb] = int(re.sub(r',', '', r.group(2)))
+            p[self.kds_s_hkb] = int(re.sub(r',', '', r.group(2)))
         else:
-            """ sum_hkb取得に失敗 またはsum_hkb概念が無いsymbol """
-            p[self.kds_sum_hkb] = 0
-            p[self.kds_sum_jks] = 0
+            """ s_hkb取得に失敗 またはs_hkb概念が無いsymbol """
+            p[self.kds_s_hkb] = 0
+            p[self.kds_s_jks] = 0
 
-        """ sum_secの取得 """
+        """ s_secの取得 """
         r = re.search(self.kds_sum_sec_re, html, self.k2_re)
         if r:
-            p[self.kds_sum_sec] = re.sub(r',', '', r.group(1))
-            p[self.kds_sum_sec + '_'] = re.sub(r',', '', r.group(2))
+            p[self.kds_s_sec] = re.sub(r',', '', r.group(1))
+            p[self.kds_s_sec + '_'] = re.sub(r',', '', r.group(2))
         else:
-            """ sum_sec取得に失敗 またはsum_sec概念が無いsymbol """
-            p[self.kds_sum_sec] = ''
-            p[self.kds_sum_sec + '_'] = ''
+            """ s_sec取得に失敗 またはs_sec概念が無いsymbol """
+            p[self.kds_s_sec] = ''
+            p[self.kds_s_sec + '_'] = ''
             
+        """ s_mstの取得 """
+        r = re.search(self.kds_sum_mst_re, html, self.k2_re)
+        if r:
+            p[self.kds_s_mst] = re.sub(r',', '', r.group(1))
+            p[self.kds_s_mst + '_'] = re.sub(r',', '', r.group(2))
+        else:
+            """ s_mst取得に失敗 またはs_mst概念が無いsymbol """
+            p[self.kds_s_mst] = ''
+            p[self.kds_s_mst + '_'] = ''
+
         return p
 
 
-    def get_accessible_symboles(self):
+    def download_k2_deq(self, symbol):
+        """ dec(JSON)のダウンロードをし、成功したらデータを返す
+        アクセス数: 1回
+        """
+        s = self.download(
+            self.k2_jso_site + self.kds_deq_dir + symbol + self.kds_deq_dir2 + self.kds_sec(),
+            self.k2_jso_site + self.kds_sum_dir + symbol,
+        ).decode()
+        return s
+
+    def deq_picker(self, j="", p={}):
+        """ deq(json)から各種情報のスクレイピング処理
+        j: json-string,
+        p: return-dictionary,
+        """
+        if self.json_invalid(j):
+            return p
+        j = json.loads(j)
+        print (p, self.kds_deq_pickl)
+        for i in self.kds_deq_pickl:
+            """ 登録されている項目はpに値を詰める """
+            if i in j[self.kds_model]:
+                p[i] = j[self.kds_model][i]
+            else:
+                p[i] = None
+
+        if (self.kds_s_hkb in p and self.kds_s_hkb and
+            self.kds_s_last  in p and self.kds_s_last
+        ):
+            p[self.kds_s_jks] = p[self.kds_s_hkb] * p[self.kds_s_last]
+
+        return p
+
+
+    def accessible_symbol(self, symbol):
+        """ シンボルがアクセス可能かを判断する
+        アクセス可能であれば True を
+        アクセス不可であれば False を返す
+        """
+        return False
+
+
+    def get_accessible_symbols(self):
         """ アクセス可能なシンボルの全取得
+        アクセス数: 最大で 2s 回
+
         但し調査に時間がかかる。
         そしてこの関数に意味があるのか。
         """
         ret = []
-        for s in self.get_all_symboles():
+        for s in self.get_all_symbols():
             """ 実際に確認してみる """
             #ret.insert(0, s)
-            ret.append(s)
-        
+            if self.accessible_symbol(s):
+                ret.append(s)
+
         return ret
+
 
 
