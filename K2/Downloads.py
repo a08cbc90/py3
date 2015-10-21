@@ -159,12 +159,19 @@ class Symbols():
         アクセス可能であれば True を
         アクセス不可であれば False を返す
         """
+        html = self.download_k2_summary(symbol)
+        if not h:
+            return False
+        p = self.summary_picker(html)
+
+
+        
         return False
 
 
     def get_accessible_symbols(self):
         """ アクセス可能なシンボルの全取得
-        アクセス数: 最大で 2s 回
+        アクセス数: 最大で 3s 回
 
         但し調査に時間がかかる。
         そしてこの関数に意味があるのか。
