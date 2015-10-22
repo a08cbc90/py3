@@ -76,10 +76,15 @@ class Symbols():
         """ サマリページのダウンロードをし、成功したらデータを返す
         アクセス数: 1回
         """
-        s = self.download(
-            self.k2_jso_site + self.kds_sum_dir + symbol,
-            self.k2_jso_site + self.kds_sum_r_dir,
-        ).decode()
+        try:
+            s = self.download(
+                self.k2_jso_site + self.kds_sum_dir + symbol,
+                self.k2_jso_site + self.kds_sum_r_dir,
+            ).decode()
+        except AttributeError:
+            """ 取得が失敗するとstrではなくNoneを返すため.decode()はAttributeErrorを吐きだす """
+            return None
+
         return s
 
 
@@ -124,10 +129,14 @@ class Symbols():
         """ dec(JSON)のダウンロードをし、成功したらデータを返す
         アクセス数: 1回
         """
-        s = self.download(
-            self.k2_jso_site + self.kds_deq_dir + symbol + self.kds_deq_dir2 + self.kds_sec(),
-            self.k2_jso_site + self.kds_sum_dir + symbol,
-        ).decode()
+        try:
+            s = self.download(
+                self.k2_jso_site + self.kds_deq_dir + symbol + self.kds_deq_dir2 + self.kds_sec(),
+                self.k2_jso_site + self.kds_sum_dir + symbol,
+            ).decode()
+        except AttributeError:
+            """ 取得が失敗するとstrではなくNoneを返すため.decode()はAttributeErrorを吐きだす """
+
         return s
 
     def deq_picker(self, j="", p={}):
@@ -146,6 +155,9 @@ class Symbols():
             else:
                 p[i] = None
 
+        """ lastがなければprecloseを入れる """
+        self.kds_s_last = self.kds_s_last or self.kds_s_preclose
+
         if (self.kds_s_hkb in p and self.kds_s_hkb and
             self.kds_s_last  in p and self.kds_s_last
         ):
@@ -154,24 +166,52 @@ class Symbols():
         return p
 
 
+    def self.download_k2_crt(self, symbol, type=None):
+        return None
+
+
     def accessible_symbol(self, symbol):
         """ シンボルがアクセス可能かを判断する
         アクセス可能であれば True を
         アクセス不可であれば False を返す
+        アクセス数: 最大で (3) 回
         """
+        """ まず、サマリを取得する """
         html = self.download_k2_summary(symbol)
-        if not h:
+        if not html:
+            """ htmlを取得できなかった場合 """
             return False
+
+        """ サマリHtmlからhkb, sec, mstだけ抽出 """
         p = self.summary_picker(html)
 
+        """ 次にdeqを取得する """
+        deq_json = self.download_k2_deq(symbol)
+        if not deq_json:
+            """ deqを取得できなかった場合 """
+            return False
 
-        
-        return False
+        """ deq-Jsonからlast, preclose等を抽出 """
+        p = self.deq_picker(deq_json, p)
+
+        """ 整合性の検証 """
+        if not self.kds_s_last in p:
+            """ lastを取得できなかった場合 """
+            return False
+
+        if p[self.kds_s_last] < self.kds_s_last_lim:
+            """ laseが最低限を満たしていない場合 """
+            return False
+
+        """ 最後にcrtを取得する """
+        crt_json = self.download_k2_crt(symbol)
+
+        return True
 
 
     def get_accessible_symbols(self):
         """ アクセス可能なシンボルの全取得
-        アクセス数: 最大で 3s 回
+        アクセス数: 最大で (3s) 回
 
         但し調査に時間がかかる。
         そしてこの関数に意味があるのか。
