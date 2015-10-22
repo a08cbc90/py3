@@ -136,6 +136,7 @@ class Symbols():
             ).decode()
         except AttributeError:
             """ 取得が失敗するとstrではなくNoneを返すため.decode()はAttributeErrorを吐きだす """
+            return None
 
         return s
 
@@ -166,8 +167,25 @@ class Symbols():
         return p
 
 
-    def self.download_k2_crt(self, symbol, type=None):
-        return None
+    def download_k2_crt(self, symbol, type=0):
+        """ dec(JSON)のダウンロードをし、成功したらデータを返す
+        アクセス数: 1回
+        """
+        period      = self.kds_crt_jpe_a[type]
+        intrtval    = self.kds_crt_jiv_a[type]
+        indicator   = self.kds_crt_jid_a
+        try:
+            c = self.download(
+                self.k2_jso_site + self.kds_crt_dir,
+                self.k2_jso_site + self.kds_crt_r_dir + symbol,
+                None,
+                self.kds_crt_jf % (symbol, period, intrtval, indicator)
+            ).decode()
+        except AttributeError:
+            """ 取得が失敗するとstrではなくNoneを返すため.decode()はAttributeErrorを吐きだす """
+            return None
+
+        return c
 
 
     def accessible_symbol(self, symbol):
@@ -203,7 +221,7 @@ class Symbols():
             """ laseが最低限を満たしていない場合 """
             return False
 
-        """ 最後にcrtを取得する """
+        """ 最後にcrtを取得する ここから。"""
         crt_json = self.download_k2_crt(symbol)
 
         return True
