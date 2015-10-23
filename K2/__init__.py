@@ -46,6 +46,10 @@ class Gen(
         self.k2_login_post  = self.login_post_gen()
         self.k2_logfile     = self.i_log_dir + '/' + self.kg_logfile
         self.logger_add_file(self.k2_logfile)
+        """ 主要データ格納場所の初期化 """
+        self.DP             = {}
+        """ crtデータ格納場所の初期化 """
+        self.DC             = {}
 
 
     def login_post_gen(self):
