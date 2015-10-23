@@ -7,11 +7,9 @@ r"""
 
 K2.Downloads.Symbols
     シンボル関係のダウンロードをを行う
-K2.Downloads.Jsons
-    JSON関係のダウンロードをを行う(未実装!)
 """
 
-import datetime, json, re
+import datetime, json, re, urllib.parse
 class Symbols():
     """ Symbol関係
     ダウンロードとか、割り当てとか
@@ -24,7 +22,6 @@ class Symbols():
         for x, y in j['K2.Downloads.Symbols'].items():
             x = "kds_" + x
             setattr(self, x, y)
-        self.sym = {}
 
 
     def kds_sec(self):
@@ -41,10 +38,11 @@ class Symbols():
         固有シンボル + メインシンボル
         ただし、多数のアクセス不可能なシンボルも混ざっていることに注意
         """
-        if not 'all' in self.sym:
-            self.sym['all'] = self.kds_c_symbols + self.get_main_symbols()
+        k  = "all-" + self.kds_symbols
+        if not k in self.DC:
+            self.DC[k] = self.kds_c_symbols + self.get_main_symbols()
 
-        return self.sym['all']
+        return self.DC[k]
 
 
     def get_main_symbols(self):
@@ -69,7 +67,30 @@ class Symbols():
             return []
 
         jl = json.loads(j)
-        return sorted(jl[self.kds_model][self.kds_symbols].keys())
+
+        """ dup entry check """
+        d = {}
+        for s in sorted(jl[self.kds_model][self.kds_symbols].keys()):
+            """ '%3A' -> ':' などにurl unescapeさせる """
+            s = urllib.parse.unquote(s)
+            r = re.search(self.kds_scr_regex, s)
+            if r:
+                if r.group(2) in d:
+                    if d[r.group(1)] > self.kds_s_atr_prio.index(r.group(3)):
+                        continue
+                    else:
+                        d[r.group(1)] = self.kds_s_atr_prio.index(r.group(3))
+                else:
+                    d[r.group(1)] = self.kds_s_atr_prio.index(r.group(3))
+            else:
+                """ 一致しない Symbolは無視！ """
+                pass
+
+        s_set = set()
+        for s in d.keys():
+            s_set.add(s + '-' + self.kds_s_atr_prio[d[s]])
+
+        return sorted(list(s_set))
 
 
     def download_k2_summary(self, symbol):
@@ -148,7 +169,6 @@ class Symbols():
         if self.json_invalid(j):
             return p
         j = json.loads(j)
-        print (p, self.kds_deq_pickl)
         for i in self.kds_deq_pickl:
             """ 登録されている項目はpに値を詰める """
             if i in j[self.kds_model]:
@@ -167,12 +187,12 @@ class Symbols():
         return p
 
 
-    def download_k2_crt(self, symbol, type=0):
+    def download_k2_crt(self, symbol, ctype=0):
         """ dec(JSON)のダウンロードをし、成功したらデータを返す
         アクセス数: 1回
         """
-        period      = self.kds_crt_jpe_a[type]
-        intrtval    = self.kds_crt_jiv_a[type]
+        period      = self.kds_crt_jpe_a[ctype]
+        intrtval    = self.kds_crt_jiv_a[ctype]
         indicator   = self.kds_crt_jid_a
         try:
             c = self.download(
@@ -184,9 +204,72 @@ class Symbols():
         except AttributeError:
             """ 取得が失敗するとstrではなくNoneを返すため.decode()はAttributeErrorを吐きだす """
             return None
-
         return c
 
+    def crt_picker(self, j="", ctype=0):
+        """ crt(json)から各種情報のスクレイピング処理
+        j: json-string,
+        ctype: 添え字
+        """
+        p = {}
+        if self.json_invalid(j):
+            return p
+
+        j = json.loads(j)
+        """ 整合性の検証 """
+        if not self.kds_success in j:
+            """ successを取得できなかった場合 """
+            return False
+        else:
+            if not j[self.kds_success]:
+                """ success値が無い場合 """
+                return False
+
+        if not self.kds_model in j:
+            """ modelを取得できなかった場合 """
+            return False
+        
+        if not self.kds_series in j[self.kds_model]:
+            """ seriesを取得できなかった場合 """
+            return False
+        elif type(j[self.kds_model][self.kds_series]) != list:
+            """ seriesがlist型であることを確認 """
+            return False
+
+        if len(j[self.kds_model][self.kds_series][0][self.kds_data]) < self.kds_s_d_lim[ctype]:
+            """ dataに格納されている標本数が制限値以下の場合 """
+            return False
+
+
+        """ ここから1 """
+        return j
+
+
+    def crt_dig_to_str(self, dig=0):
+        """ 1000 で割って%s にする。
+        1442814358000 ならば 1442814358
+        """
+        return '%d' % (dig / 1000)
+
+
+    def crt_add_data(self, cj, ctype, p):
+        """ ここから2 """
+        d = {}
+        for x in range(len(self.kds_crt_d_set)):
+            print("X:", x)
+            for y in cj[self.kds_model][self.kds_series][x][self.kds_data]:
+                print("Y:", y)
+                k = self.crt_dig_to_str(y[0])
+                if not k in d:
+                    d[k] = {}
+
+                for z in range(len(self.kds_crt_d_set[x])):
+                    print("Z:", z, y[z+1])
+                    d[k][self.kds_crt_d_set[x][z]] = y[z+1]
+
+        #for i in sorted(d.keys()):
+        #     print(i,d[i])
+        return d
 
     def accessible_symbol(self, symbol):
         """ シンボルがアクセス可能かを判断する
@@ -196,6 +279,7 @@ class Symbols():
         """
         """ まず、サマリを取得する """
         html = self.download_k2_summary(symbol)
+        ctype = 0
         if not html:
             """ htmlを取得できなかった場合 """
             return False
@@ -217,14 +301,23 @@ class Symbols():
             """ lastを取得できなかった場合 """
             return False
 
-        if p[self.kds_s_last] < self.kds_s_last_lim:
+        if p[self.kds_s_last] < self.kds_s_last_lim[ctype]:
             """ laseが最低限を満たしていない場合 """
             return False
 
-        """ 最後にcrtを取得する ここから。"""
-        crt_json = self.download_k2_crt(symbol)
+        """ 最後にcrtを取得する"""
+        cj = self.download_k2_crt(symbol, ctype)
+        cj = self.crt_picker(cj, ctype)
+        if cj:
+            """ crt(cj)データが要求を満たせた場合
+            p に要素を追加する
+            """
+            p = self.crt_add_data(cj, ctype, p)
+        else:
+            """ crt(cj)データが要求を満たせなかった場合 """
+            return False
 
-        return True
+        return p
 
 
     def get_accessible_symbols(self):
@@ -234,14 +327,19 @@ class Symbols():
         但し調査に時間がかかる。
         そしてこの関数に意味があるのか。
         """
+        k = "accessible-" + self.kds_symbols
+        if k in self.DC:
+            return self.DC[k]
+
         ret = []
-        for s in self.get_all_symbols():
+        for s in self.get_all_symbols()[128:133]:
             """ 実際に確認してみる """
             #ret.insert(0, s)
             if self.accessible_symbol(s):
                 ret.append(s)
 
-        return ret
+        self.DC[k] = ret
+        return self.DC[k]
 
 
 
