@@ -40,9 +40,9 @@ class Symbols():
         """
         k  = "all-" + self.kds_symbols
         if not k in self.DC:
-            self.DC[k] = self.kds_c_symbols + self.get_main_symbols()
+            self.DP[k] = self.kds_c_symbols + self.get_main_symbols()
 
-        return self.DC[k]
+        return self.DP[k]
 
 
     def get_main_symbols(self):
@@ -252,23 +252,25 @@ class Symbols():
         return '%d' % (dig / 1000)
 
 
-    def crt_add_data(self, cj, ctype, p):
-        """ ここから2 """
+    def crt_create_data(self, cj, ctype):
+        """ ctype は将来の拡張性のために書いてるだけで今は
+        何の意味も無い
+        """
         d = {}
         for x in range(len(self.kds_crt_d_set)):
-            print("X:", x)
             for y in cj[self.kds_model][self.kds_series][x][self.kds_data]:
-                print("Y:", y)
                 k = self.crt_dig_to_str(y[0])
                 if not k in d:
                     d[k] = {}
 
                 for z in range(len(self.kds_crt_d_set[x])):
-                    print("Z:", z, y[z+1])
                     d[k][self.kds_crt_d_set[x][z]] = y[z+1]
 
         #for i in sorted(d.keys()):
         #     print(i,d[i])
+        """ ここから2
+        p[self.kds_crt_key] = d
+        """
         return d
 
     def accessible_symbol(self, symbol):
@@ -277,6 +279,10 @@ class Symbols():
         アクセス不可であれば False を返す
         アクセス数: 最大で (3) 回
         """
+        """ [大前提]特殊シンボルは検索しない """
+        if not re.search(self.kds_scr_regex, symbol):
+            return False
+
         """ まず、サマリを取得する """
         html = self.download_k2_summary(symbol)
         ctype = 0
@@ -310,14 +316,14 @@ class Symbols():
         cj = self.crt_picker(cj, ctype)
         if cj:
             """ crt(cj)データが要求を満たせた場合
-            p に要素を追加する
+            新規要素 crt を作成する
             """
-            p = self.crt_add_data(cj, ctype, p)
+            crt = self.crt_create_data(cj, ctype)
         else:
             """ crt(cj)データが要求を満たせなかった場合 """
             return False
 
-        return p
+        return [p, crt]
 
 
     def get_accessible_symbols(self):
@@ -328,18 +334,20 @@ class Symbols():
         そしてこの関数に意味があるのか。
         """
         k = "accessible-" + self.kds_symbols
-        if k in self.DC:
-            return self.DC[k]
+        if k in self.DP:
+            return self.DP[k]
 
-        ret = []
-        for s in self.get_all_symbols()[128:133]:
+        self.DP[k] = {}
+
+        for s in self.get_all_symbols()[1000:1119]:
             """ 実際に確認してみる """
             #ret.insert(0, s)
-            if self.accessible_symbol(s):
-                ret.append(s)
+            res = self.accessible_symbol(s)
+            if res:
+                self.DP[k][s] = res[0]
+                self.DC[s]    = res[1]
 
-        self.DC[k] = ret
-        return self.DC[k]
+        return self.DP[k]
 
 
 
