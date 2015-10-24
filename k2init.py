@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 
-r""" log/ ディレクトリをつくる。
+r""" K2Classのテスト用として当面利用中
 """
 
 if __name__ != '__main__':
@@ -11,10 +11,17 @@ if __name__ != '__main__':
 
 import K2
 C = K2.Gen()
-
-g = C.get_accessible_symboles()
-h = C.download_k2_summary(g[1997])
-print(C.summary_picker(h))
+print("JsonLoaded?: " + C.ht_url)
+g = C.get_accessible_symbols()
+print(C.DP)
+exit()
+"""
+g = C.get_accessible_symbols()
+h = C.download_k2_summary(Z)
+p = C.summary_picker(h)
+print (C.deq_picker(i, p))
+print(p)
+"""
 exit()
 print(C.klogin())
 print(C.ht_counter_print())
