@@ -111,6 +111,7 @@ class Symbols():
 
     def summary_picker(self, html='', p={}):
         """ サマリページから各種情報のスクレイピング処理
+        アクセス数: 0回
         html: html-script,
         p: return-dictonary,
         """
@@ -163,6 +164,7 @@ class Symbols():
 
     def deq_picker(self, j="", p={}):
         """ deq(json)から各種情報のスクレイピング処理
+        アクセス数: 0回
         j: json-string,
         p: return-dictionary,
         """
@@ -208,6 +210,7 @@ class Symbols():
 
     def crt_picker(self, j="", ctype=0):
         """ crt(json)から各種情報のスクレイピング処理
+        アクセス数: 0回
         j: json-string,
         ctype: 添え字
         """
@@ -240,21 +243,21 @@ class Symbols():
             """ dataに格納されている標本数が制限値以下の場合 """
             return False
 
-
-        """ ここから1 """
         return j
 
 
     def crt_dig_to_str(self, dig=0):
         """ 1000 で割って%s にする。
+        アクセス数: 0回
         1442814358000 ならば 1442814358
         """
         return '%d' % (dig / 1000)
 
 
     def crt_create_data(self, cj, ctype):
-        """ ctype は将来の拡張性のために書いてるだけで今は
-        何の意味も無い
+        """ ctrデータを取得する
+        アクセス数: 0回
+        ctype は将来の拡張性のために書いてるだけで今は何の意味も無い
         """
         d = {}
         for x in range(len(self.kds_crt_d_set)):
@@ -266,18 +269,14 @@ class Symbols():
                 for z in range(len(self.kds_crt_d_set[x])):
                     d[k][self.kds_crt_d_set[x][z]] = y[z+1]
 
-        #for i in sorted(d.keys()):
-        #     print(i,d[i])
-        """ ここから2
-        p[self.kds_crt_key] = d
-        """
         return d
+
 
     def accessible_symbol(self, symbol):
         """ シンボルがアクセス可能かを判断する
+        アクセス数: 最大で (3) 回
         アクセス可能であれば True を
         アクセス不可であれば False を返す
-        アクセス数: 最大で (3) 回
         """
         """ [大前提]特殊シンボルは検索しない """
         if not re.search(self.kds_scr_regex, symbol):
@@ -313,6 +312,10 @@ class Symbols():
 
         """ 最後にcrtを取得する"""
         cj = self.download_k2_crt(symbol, ctype)
+        if not cj:
+            """ crtを取得できなかった場合 """
+            return False
+
         cj = self.crt_picker(cj, ctype)
         if cj:
             """ crt(cj)データが要求を満たせた場合
@@ -335,19 +338,20 @@ class Symbols():
         """
         k = "accessible-" + self.kds_symbols
         if k in self.DP:
+            """ すでに取得済みなら実施しない """
             return self.DP[k]
 
         self.DP[k] = {}
-
-        for s in self.get_all_symbols()[1000:1119]:
-            """ 実際に確認してみる """
-            #ret.insert(0, s)
+        #for s in self.get_all_symbols()[1000:1119]:
+        for s in self.get_all_symbols():
+            """ 各シンボルに対して3回のアクセスを実施して有用か否かを判断する """
             res = self.accessible_symbol(s)
             if res:
+                """ データを格納すべきと判断された場合 DP,DC にデータを格納 """
                 self.DP[k][s] = res[0]
                 self.DC[s]    = res[1]
 
-        return self.DP[k]
+        return sorted(self.DP[k].keys())
 
 
 
