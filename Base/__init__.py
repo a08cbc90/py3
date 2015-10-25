@@ -373,8 +373,11 @@ class HttpClient(Util):
         for i in ["total", "post", "fail"]:
             self.logw("%s:\t\t%d" %(i, self.ht_counter[i]))
 
+        """ 全行表示は如何なものか
         for error_ary in self.ht_counter['fail_description']:
             self.logw("%s ErrCode: %d, Descroption: '%s'" % error_ary)
+        """
+        self.logw("%s ErrCode: %d, Descroption: '%s'" % self.ht_counter['fail_description'][-1]
 
         return None
 
