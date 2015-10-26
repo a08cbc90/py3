@@ -214,9 +214,8 @@ class Symbols():
         j: json-string,
         ctype: 添え字
         """
-        p = {}
         if self.json_invalid(j):
-            return p
+            return False
 
         j = json.loads(j)
         """ 整合性の検証 """
@@ -272,6 +271,51 @@ class Symbols():
         return d
 
 
+    def s_sec_collection(self):
+        """ s_secの種類の数だけ集める。
+        集めたデータは self.DP[self.kds_s_sec] で保存する
+        """
+        s_sec = set()
+        k = "accessible-" + self.kds_symbols
+        for s in self.DP[k]:
+            if self.kds_s_sec in self.DP[k][s]:
+                if self.DP[k][s][self.kds_s_sec]:
+                    s_sec.add(self.DP[k][s][self.kds_s_sec])
+
+        self.DP[self.kds_s_sec] = list(s_sec)
+        return self.DP[self.kds_s_sec]
+
+
+    def s_mst_collection(self):
+        """ s_mstの種類の数だけ集める。
+        集めたデータは self.DP[self.kds_s_mst] で保存する
+        """
+        s_mst = set()
+        k = "accessible-" + self.kds_symbols
+        for s in self.DP[k]:
+            if self.kds_s_mst in self.DP[k][s]:
+                if self.DP[k][s][self.kds_s_mst]:
+                    s_mst.add(self.DP[k][s][self.kds_s_mst])
+
+        self.DP[self.kds_s_mst] = list(s_mst)
+        return self.DP[self.kds_s_mst]
+
+
+    def s_elk_collection(self):
+        """ s_elkの種類の数だけ集める。
+        集めたデータは self.DP[self.kds_s_elk] で保存する
+        """
+        s_elk = set()
+        k = "accessible-" + self.kds_symbols
+        for s in self.DP[k]:
+            if self.kds_s_elk in self.DP[k][s]:
+                if self.DP[k][s][self.kds_s_elk]:
+                    s_elk.add(self.DP[k][s][self.kds_s_elk])
+
+        self.DP[self.kds_s_elk] = list(s_elk)
+        return self.DP[self.kds_s_elk]
+
+
     def accessible_symbol(self, symbol):
         """ シンボルがアクセス可能かを判断する
         アクセス数: 最大で (3) 回
@@ -289,8 +333,9 @@ class Symbols():
             """ htmlを取得できなかった場合 """
             return False
 
+        p = {}
         """ サマリHtmlからhkb, sec, mstだけ抽出 """
-        p = self.summary_picker(html)
+        p = self.summary_picker(html, p)
 
         """ 次にdeqを取得する """
         deq_json = self.download_k2_deq(symbol)
@@ -332,9 +377,9 @@ class Symbols():
     def get_accessible_symbols(self):
         """ アクセス可能なシンボルの全取得
         アクセス数: 最大で (3s) 回
+        crtも取得し、一時ファイルとして保存する場合がある。
+        一時ファイルの有効期限内ならばそれを読み込む場合がある
 
-        但し調査に時間がかかる。
-        そしてこの関数に意味があるのか。
         """
         k = "accessible-" + self.kds_symbols
         if k in self.DP:
@@ -342,8 +387,24 @@ class Symbols():
             return self.DP[k]
 
         self.DP[k] = {}
-        #for s in self.get_all_symbols()[1000:1119]:
+        savefile = self.i_tmp_dir + '/' + self.kds_crt_dat_nm
+        if self.kds_crt_dat_lt:
+            file_avail = self.file_timestamp_delay(savefile) / 60
+            if file_avail > self.kds_crt_dat_lt:
+                self.rm(savefile)
+            else:
+                """ そのデータを更新して返す """
+                accessible_symbols_json = self.rf(savefile)
+                accessible_symbols_json = json.loads(accessible_symbols_json)
+                for key in accessible_symbols_json.keys():
+                    setattr(self, key, accessible_symbols_json[key])
+
+                return sorted(self.DP[k].keys())
+
+        """
         for s in self.get_all_symbols():
+        """
+        for s in self.get_all_symbols()[2000:2119]:
             """ 各シンボルに対して3回のアクセスを実施して有用か否かを判断する """
             res = self.accessible_symbol(s)
             if res:
@@ -351,7 +412,30 @@ class Symbols():
                 self.DP[k][s] = res[0]
                 self.DC[s]    = res[1]
 
+        """ s_sec をDPに追加情報として記述する """
+        self.s_sec_collection()
+        """ s_mst をDPに追加情報として記述する """
+        self.s_mst_collection()
+        """ s_elk をDPに追加情報として記述する """
+        self.s_elk_collection()
+
+        if self.kds_crt_dat_lt and file_avail > self.kds_crt_dat_lt:
+            """ crt_dat_ltが設定されている場合
+            かつ、期限が切れている場合ファイルに保存する """
+            accessible_symbols_json = json.dumps({"DP": self.DP, "DC": self.DC})
+            self.wf(savefile, accessible_symbols_json)
+
         return sorted(self.DP[k].keys())
 
+
+    def crt_to_sttt(self):
+        """ 各crtデータから集計
+        """
+        for symbol in self.DC.keys():
+            for dips in sorted(self.DC[symbol]):
+                """ ここから """
+                print(symbol, self.epoch_second_to_ymdhms(dips), self.DC[symbol][dips])
+
+        print (self.DP)
 
 
