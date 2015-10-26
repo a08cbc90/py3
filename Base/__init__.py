@@ -320,6 +320,11 @@ class Util():
         return None
 
 
+    def epoch_second_to_ymdhms(self, epochsec=0):
+        """ 1417651200 -> '2014/12/04 09:00:00' """
+        return datetime.datetime.fromtimestamp(int(epochsec)).strftime("%Y/%m/%d %H:%M:%S")
+
+
     def file_timestamp_delay(self, path=None):
         """ ファイルのModifyタイムスタンプが現在から何秒ずれているかを整数で返す
         ファイルが無い場合は 1900年前との差を返す。
@@ -331,7 +336,7 @@ class Util():
             """ ファイルが存在しない場合 """
             return int(t)
 
-        return int(os.stat(path).st_mtime - int(t))
+        return int(int(t) - os.stat(path).st_mtime)
 
 
 import http.cookiejar, urllib, gzip, datetime, time, socket
