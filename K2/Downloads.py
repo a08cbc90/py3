@@ -428,14 +428,78 @@ class Symbols():
         return sorted(self.DP[k].keys())
 
 
-    def crt_to_sttt(self):
-        """ 各crtデータから集計
+    def add_crts_gains(self):
+        """ 各crtデータから各利得を集計する。
         """
         for symbol in self.DC.keys():
-            for dips in sorted(self.DC[symbol]):
-                """ ここから """
-                print(symbol, self.epoch_second_to_ymdhms(dips), self.DC[symbol][dips])
+            self.add_crt_gains(symbol)
+            """ ここから """
 
-        print (self.DP)
+
+    def add_crt_gains(self, symbol=None):
+        """ シンボルを受け取り、self.DC内に利得情報を追加していく
+        """
+        if not symbol:
+            return None
+
+        delay_box = [None] * self.kds_cd_gen_num
+        for datetimestring in sorted(self.DC[symbol].keys(), reverse=True):
+            if delay_box[0]:
+                """ delay_box[0] に値が入っている=2週目以降の場合 """
+                """ gains はdatetime時の利得となる """
+                gains = []
+                for day_list in list(delay_box):
+                    if day_list == None:
+                        """ day_listにデータがなくなったらそのdatetimeは終了 """
+                        break
+                    """ day_list が存在している場合には下記の処理を実施 """
+                    gains.append(
+                        [day_list[0] / self.DC[symbol][datetimestring][self.kds_crt_d_set[0][3]] - 1, 
+                         day_list[1] / self.DC[symbol][datetimestring][self.kds_crt_d_set[0][3]] - 1]
+                    )
+
+                """ delay_boxの中身を取り出したgainsを集計し終えたら流し込む """
+                self.DC[symbol][datetimestring][self.kds_s_gain] = gains
+
+            """ ここからは1周目から全て行う処理 """
+            delay_box.insert(0,
+                [
+                    self.DC[symbol][datetimestring][self.kds_crt_d_set[0][1]],
+                    self.DC[symbol][datetimestring][self.kds_crt_d_set[0][2]],
+                ]
+            )
+            delay_box.pop()
+            """ 閾値のオーバーシュート処理 """
+            for n in range(1, self.kds_cd_gen_num):
+                if not delay_box[n]:
+                    """ 参照すべき値が無くなった """
+                    break
+
+                delay_box[n][0] = max(delay_box[n][0], delay_box[0][0])
+                delay_box[n][1] = min(delay_box[n][1], delay_box[0][1])
+
+        return symbol
+
+        """ line158 """
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
