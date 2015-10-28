@@ -402,9 +402,9 @@ class Symbols():
                 return sorted(self.DP[k].keys())
 
         """
-        for s in self.get_all_symbols():
-        """
         for s in self.get_all_symbols()[2000:2119]:
+        """
+        for s in self.get_all_symbols():
             """ 各シンボルに対して3回のアクセスを実施して有用か否かを判断する """
             res = self.accessible_symbol(s)
             if res:
@@ -433,7 +433,10 @@ class Symbols():
         """
         for symbol in self.DC.keys():
             self.add_crt_gains(symbol)
-            """ ここから """
+
+        self.create_cd_templates()
+        """ ここから """
+        return None
 
 
     def add_crt_gains(self, symbol=None):
@@ -480,7 +483,23 @@ class Symbols():
 
         return symbol
 
-        """ line158 """
+
+    def create_cd_templates(self, ctype=0):
+        """ カテゴリ別cd元データを作成する
+        """
+        k = "accessible-" + self.kds_symbols
+        
+        for mst in self.DP[self.kds_s_mst]:
+            for sec in self.DP[self.kds_s_sec]:
+                for elk in self.DP[self.kds_s_elk]:
+                    for s in self.DC.keys():
+                        if (
+                            (mst == self.DP[k][s][self.kds_s_mst] or mst == 'all')
+                            
+                        ):
+                            print (s, mst)
+
+
 
 
 
