@@ -9,7 +9,7 @@ K2.Downloads.Symbols
     シンボル関係のダウンロードをを行う
 """
 
-import datetime, json, re, urllib.parse
+import datetime, json, re, urllib.parse, itertools
 class Symbols():
     """ Symbol関係
     ダウンロードとか、割り当てとか
@@ -465,7 +465,8 @@ class Symbols():
                 self.DC[symbol][datetimestring][self.kds_s_gain] = gains
 
             """ ここからは1周目から全て行う処理 """
-            delay_box.insert(0,
+            delay_box.insert(
+                0,
                 [
                     self.DC[symbol][datetimestring][self.kds_crt_d_set[0][1]],
                     self.DC[symbol][datetimestring][self.kds_crt_d_set[0][2]],
@@ -487,18 +488,56 @@ class Symbols():
     def create_cd_templates(self, ctype=0):
         """ カテゴリ別cd元データを作成する
         """
-        k = "accessible-" + self.kds_symbols
-        
-        for mst in self.DP[self.kds_s_mst]:
-            for sec in self.DP[self.kds_s_sec]:
-                for elk in self.DP[self.kds_s_elk]:
-                    for s in self.DC.keys():
-                        if (
-                            (mst == self.DP[k][s][self.kds_s_mst] or mst == 'all')
-                            
-                        ):
-                            print (s, mst)
+        for mst in  self.DP[self.kds_s_mst] + ['all']:
+            for sec in self.DP[self.kds_s_sec] + ['all']:
+                for elk in self.DP[self.kds_s_elk] + ['all']:
+                    for cdstrset in list(itertools.chain.from_iterable(self.kds_crt_d_set[5:6])):
+                        """ cdstrsetはKeyName(str) """
+                        for generation in range(self.kds_cd_gen_num):
+                            """ generationは世代数(int) """
+                            for h in range(2):
+                                """ h は配列添え字(int) """
+                                self.create_cd_templates_ses(mst, sec, elk, cdstrset, generation, h)
 
+
+    def create_cd_templates_ses(self, m=None, s=None, e=None, c=None, g=0, h=0):
+        """ 関数にばらしてみたけど・・・ """
+        if m and s and e and c:
+            for sym in self.DC.keys():
+                self.create_cd_templates_ses_s(m, s, e, c, g, h, sym)
+            return True
+
+        else:
+            return None
+
+
+    def create_cd_templates_ses_s(self, m=None, s=None, e=None, c=None, g=0, h=0, symbol=None):
+        """ こういう書き方でいいのかねぇ・・・ """
+        k = "accessible-" + self.kds_symbols
+        if not symbol:
+            return None
+
+        if (
+            (m == self.DP[k][symbol][self.kds_s_mst] or m == 'all') and
+            (s == self.DP[k][symbol][self.kds_s_sec] or s == 'all') and
+            (e == self.DP[k][symbol][self.kds_s_elk] or e == 'all')
+        ):
+            
+            """ h[0, 1] -> l[1, 0] """
+            l = 1 - h
+            I = {"T":[], 'L':(0.5 - h) * 200, 'tt':0, 'bl':0, 'ht':0}
+            for t in  sorted(self.DC[symbol].keys()):
+                print(m, s, e, c, g, h, I, self.DC[symbol][t])
+
+            exit()
+
+
+
+                    
+
+            return True
+        else:
+            return None
 
 
 
