@@ -387,7 +387,7 @@ class Symbols():
             return self.DP[k]
 
         self.DP[k] = {}
-        savefile = self.i_tmp_dir + '/' + self.kds_crt_dat_nm
+        savefile = self.kg_dat_dir + '/' + self.kds_crt_dat_nm
         if self.kds_crt_dat_lt:
             file_avail = self.file_timestamp_delay(savefile) / 60
             if file_avail > self.kds_crt_dat_lt:
@@ -503,8 +503,66 @@ class Symbols():
     def create_cd_templates_ses(self, m=None, s=None, e=None, c=None, g=0, h=0):
         """ 関数にばらしてみたけど・・・ """
         if m and s and e and c:
-            for sym in self.DC.keys():
-                self.create_cd_templates_ses_s(m, s, e, c, g, h, sym)
+            for S in sorted(self.DC.keys()):
+                k = "accessible-" + self.kds_symbols
+                l = 1 - h
+                I = {"T":[], 'L':(0.5 - h) * 200, 'tt':0, 'bl':0, 'ht':0}
+                if not S:
+                    """ ないとはおもうが Symbolが空の場合 """
+                    continue
+
+                if m != self.DP[k][S][self.kds_s_mst] and m != 'all':
+                    """ mst 不一致で allでもない場合 """
+                    continue
+
+                if s != self.DP[k][S][self.kds_s_sec] and s != 'all':
+                    """ sec 不一致で allでもない場合 """
+                    continue
+
+                if e != self.DP[k][S][self.kds_s_elk] and e != 'all':
+                    """ slk 不一致で allでもない場合 """
+                    continue
+
+                for t in  sorted(self.DC[S].keys()):
+                    """ t は時間 """
+                    print(S, s, e, c, g, h, self.epoch_second_to_ymdhms(t))
+                    if (
+                        not self.kds_crt_d_set[0][3] in self.DC[S][t] or
+                        not self.kds_s_gain in self.DC[S][t]
+                    ):
+                        """ 0-3クローズがない場合、gainキーがない場合 """
+                        continue
+
+                    if g >= len(self.DC[S][t][self.kds_s_gain]):
+                        """ gainキーはあっても配列に対象がいない場合 """
+                        continue
+
+                    """ 利得pの計算 """
+                    p  = self.DC[S][t][self.kds_s_gain][g][h] + 1
+                    p *= self.DC[S][t][self.kds_crt_d_set[0][3]]
+                    if l == 0:
+                        p /= self.DC[S][t][self.kds_crt_d_set[0][2]]
+                    else:
+                        p /= self.DC[S][t][self.kds_crt_d_set[0][1]]
+
+                    p -= 1
+                    print(p, ">", self.kds_tgt_gain / 100)
+
+
+                    """
+                    if l == 0:
+                        if (self.DC[S][t][self.kds_s_gain][h] + 1) * self.DC[S][t][self.kds_crt_d_set[0][3]] / self.DC[S][t][self.kds_crt_d_set[0][2]] - 1 > self.kds_tgt_gain / 100:
+                            pass
+                        else:
+                            pass
+                    else:
+                        if 
+
+                    I['T'] += 1
+                    """
+                    print(self.DC[S][t][self.kds_crt_d_set[0][3]], self.DC[S][t][self.kds_s_gain][g][h], )
+
+            exit()
             return True
 
         else:
@@ -513,7 +571,6 @@ class Symbols():
 
     def create_cd_templates_ses_s(self, m=None, s=None, e=None, c=None, g=0, h=0, symbol=None):
         """ こういう書き方でいいのかねぇ・・・ """
-        k = "accessible-" + self.kds_symbols
         if not symbol:
             return None
 
@@ -524,12 +581,9 @@ class Symbols():
         ):
             
             """ h[0, 1] -> l[1, 0] """
-            l = 1 - h
-            I = {"T":[], 'L':(0.5 - h) * 200, 'tt':0, 'bl':0, 'ht':0}
-            for t in  sorted(self.DC[symbol].keys()):
-                print(m, s, e, c, g, h, I, self.DC[symbol][t])
+        
+            print(m, s, e, c, g, h, I, self.DC[symbol][t])
 
-            exit()
 
 
 
