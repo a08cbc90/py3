@@ -491,7 +491,7 @@ class Symbols():
         for mst in  self.DP[self.kds_s_mst] + ['all']:
             for sec in self.DP[self.kds_s_sec] + ['all']:
                 for elk in self.DP[self.kds_s_elk] + ['all']:
-                    for cdstrset in list(itertools.chain.from_iterable(self.kds_crt_d_set[5:6])):
+                    for cdstrset in list(itertools.chain.from_iterable(self.kds_crt_d_set[5:7])):
                         """ cdstrsetはKeyName(str) """
                         for generation in range(self.kds_cd_gen_num):
                             """ generationは世代数(int) """
@@ -502,75 +502,80 @@ class Symbols():
 
     def create_cd_templates_ses(self, m=None, s=None, e=None, c=None, g=0, h=0):
         """ 関数にばらしてみたけど・・・ """
-        if m and s and e and c:
-            for S in sorted(self.DC.keys()):
-                k = "accessible-" + self.kds_symbols
-                l = 1 - h
-                I = {"T":[], 'L':(0.5 - h) * 200, 'tt':0, 'bl':0, 'ht':0}
-                if not S:
-                    """ ないとはおもうが Symbolが空の場合 """
-                    continue
-
-                if m != self.DP[k][S][self.kds_s_mst] and m != 'all':
-                    """ mst 不一致で allでもない場合 """
-                    continue
-
-                if s != self.DP[k][S][self.kds_s_sec] and s != 'all':
-                    """ sec 不一致で allでもない場合 """
-                    continue
-
-                if e != self.DP[k][S][self.kds_s_elk] and e != 'all':
-                    """ slk 不一致で allでもない場合 """
-                    continue
-
-                for t in  sorted(self.DC[S].keys()):
-                    """ t は時間 """
-                    print(S, s, e, c, g, h, self.epoch_second_to_ymdhms(t))
-                    if (
-                        not self.kds_crt_d_set[0][3] in self.DC[S][t] or
-                        not self.kds_s_gain in self.DC[S][t]
-                    ):
-                        """ 0-3クローズがない場合、gainキーがない場合 """
-                        continue
-
-                    if g >= len(self.DC[S][t][self.kds_s_gain]):
-                        """ gainキーはあっても配列に対象がいない場合 """
-                        continue
-
-                    """ 利得pの計算 """
-                    p  = self.DC[S][t][self.kds_s_gain][g][h] + 1
-                    p *= self.DC[S][t][self.kds_crt_d_set[0][3]]
-                    if l == 0:
-                        p /= self.DC[S][t][self.kds_crt_d_set[0][2]]
-                    else:
-                        p /= self.DC[S][t][self.kds_crt_d_set[0][1]]
-
-                    p -= 1
-                    print(p, ">", self.kds_tgt_gain / 100)
-
-
-                    """
-                    if l == 0:
-                        if (self.DC[S][t][self.kds_s_gain][h] + 1) * self.DC[S][t][self.kds_crt_d_set[0][3]] / self.DC[S][t][self.kds_crt_d_set[0][2]] - 1 > self.kds_tgt_gain / 100:
-                            pass
-                        else:
-                            pass
-                    else:
-                        if 
-
-                    I['T'] += 1
-                    """
-                    print(self.DC[S][t][self.kds_crt_d_set[0][3]], self.DC[S][t][self.kds_s_gain][g][h], )
-
-            exit()
-            return True
-
-        else:
+        if not m or not s or not e or not c:
             return None
+
+        for S in sorted(self.DC.keys()):
+            k = "accessible-" + self.kds_symbols
+            I = {"T":[], 'L':(0.5 - h) * 200, 't':0, 'b':0, 'h':0}
+            if not S:
+                """ ないとはおもうが Symbolが空の場合 """
+                continue
+
+            if m != self.DP[k][S][self.kds_s_mst] and m != 'all':
+                """ mst 不一致で allでもない場合 """
+                continue
+
+            if s != self.DP[k][S][self.kds_s_sec] and s != 'all':
+                """ sec 不一致で allでもない場合 """
+                continue
+
+            if e != self.DP[k][S][self.kds_s_elk] and e != 'all':
+                """ slk 不一致で allでもない場合 """
+                continue
+
+            for t in  sorted(self.DC[S].keys()):
+                """ t は時間
+                print(S, s, e, c, g, h, self.epoch_second_to_ymdhms(t))
+                """
+                if (
+                    not self.kds_crt_d_set[0][3] in self.DC[S][t] or
+                    not self.kds_s_gain in self.DC[S][t]
+                ):
+                    """ 0-3クローズがない場合、gainキーがない場合 """
+                    continue
+
+                if g >= len(self.DC[S][t][self.kds_s_gain]):
+                    """ gainキーはあっても配列に対象がいない場合 """
+                    continue
+
+                if not c in self.DC[S][t]:
+                    """ cdstrsetキーはあっても配列に対象がいない場合 """
+                    continue
+
+
+                I['t'] += 1
+                """ 利得pの計算 """
+                p  = self.DC[S][t][self.kds_s_gain][g][h] + 1
+                p *= self.DC[S][t][self.kds_crt_d_set[0][3]]
+                if h == 0:
+                    p /= self.DC[S][t][self.kds_crt_d_set[0][2]]
+                else:
+                    p /= self.DC[S][t][self.kds_crt_d_set[0][1]]
+
+                p -= 1
+                if h == 0:
+                    """ さがりぎみ """
+                    if p > self.kds_tgt_gain / 100:
+                        """ blowした """
+                        I['T'].append(self.DC[S][t][c])
+                    else:
+                        print(S, h, p, c, self.DC[S][t][c], g, h, self.DC[S][t][self.kds_s_gain][g][h], self.DC[S][t])
+                else:
+                    """ あがりぎみ """
+                    if p < self.kds_tgt_gain / -100:
+                        """ blowした """
+                        I['T'].append(self.DC[S][t][c])
+                        #print(S, h, p, c, self.DC[S][t][c], g, h, self.DC[S][t][self.kds_s_gain][g][h], self.DC[S][t])
+
+
+            return True
 
 
     def create_cd_templates_ses_s(self, m=None, s=None, e=None, c=None, g=0, h=0, symbol=None):
-        """ こういう書き方でいいのかねぇ・・・ """
+        """ こういう書き方でいいのかねぇ・・・ 
+        良くないので消す予定。
+        """
         if not symbol:
             return None
 
