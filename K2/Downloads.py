@@ -352,7 +352,7 @@ class Symbols():
             return False
 
         if p[self.kds_s_last] < self.kds_s_last_lim[ctype]:
-            """ laseが最低限を満たしていない場合 """
+            """ lastが最低限を満たしていない場合 """
             return False
 
         """ 最後にcrtを取得する"""
@@ -431,11 +431,14 @@ class Symbols():
     def add_crts_gains(self):
         """ 各crtデータから各利得を集計する。
         """
-        for symbol in self.DC.keys():
-            self.add_crt_gains(symbol)
+        self.DP['cd'] =[None] * 1
+        for ctype in range(1):
+            """ ctypeは足の種類 """
+            self.DP['cd'][ctype] = {}
+            for symbol in self.DC.keys():
+                self.add_crt_gains(symbol)
 
-        self.create_cd_templates()
-        """ ここから """
+            self.create_cd_templates(ctype)
         return None
 
 
@@ -485,65 +488,108 @@ class Symbols():
         return symbol
 
 
+    def create_cd_templates_ck_hloop(self, m=None, h=None):
+        """ すべてmst,sec,elk,cdstrset,generation,hに絡んだ条件式であること """
+        if not m:
+            return True
+
+        if h == 1:
+            if m != self.kds_crt_urika:
+                """ mstによっては計算不要なものがある """
+                return True
+
+        return False
+
+
     def create_cd_templates(self, ctype=0):
         """ カテゴリ別cd元データを作成する
         """
+        self.DP['cd'][ctype] = {}
         for mst in  self.DP[self.kds_s_mst] + ['all']:
+            self.DP['cd'][ctype][mst] = {}
             for sec in self.DP[self.kds_s_sec] + ['all']:
+                self.DP['cd'][ctype][mst][sec] = {}
                 for elk in self.DP[self.kds_s_elk] + ['all']:
+                    self.DP['cd'][ctype][mst][sec][elk] = {}
                     for cdstrset in list(itertools.chain.from_iterable(self.kds_crt_d_set[5:7])):
                         """ cdstrsetはKeyName(str) """
+                        self.DP['cd'][ctype][mst][sec][elk][cdstrset] = [None] * self.kds_cd_gen_num
                         for generation in range(self.kds_cd_gen_num):
+
                             """ generationは世代数(int) """
+                            self.DP['cd'][ctype][mst][sec][elk][cdstrset][generation] = [None] * 2
                             for h in range(2):
                                 """ h は配列添え字(int) """
-                                self.create_cd_templates_ses(mst, sec, elk, cdstrset, generation, h)
+                                if self.create_cd_templates_ck_hloop(mst, h):
+                                    continue
+                                I = self.create_cd_templates_ses(mst, sec, elk, cdstrset, generation, h, ctype)
+                                if I:
+                                    self.DP['cd'][ctype][mst][sec][elk][cdstrset][generation][h] = I
+        print(self.DP['cd'][ctype] )
 
 
-    def create_cd_templates_ses(self, m=None, s=None, e=None, c=None, g=0, h=0):
+    def create_cd_templates_ses_ck_Sloop(self, S=None, k=None, m=None, s=None, e=None):
+        """ すべてシンボルに絡んだ条件式であること """
+        if not S:
+            """ ないとはおもうが Symbolが空の場合 """
+            return True
+
+        if m != self.DP[k][S][self.kds_s_mst] and m != 'all':
+            """ mst 不一致で allでもない場合 """
+            return True
+
+        if s != self.DP[k][S][self.kds_s_sec] and s != 'all':
+            """ sec 不一致で allでもない場合 """
+            return True
+
+        if e != self.DP[k][S][self.kds_s_elk] and e != 'all':
+            """ slk 不一致で allでもない場合 """
+            return True
+
+        return False
+
+
+    def create_cd_templates_ses_ck_tloop(self, t=None, S=None, c=None, g=0, ctype=0):
+        """ すべて時間に絡んだ条件式であること """
+        if not c in self.DC[S][t]:
+            """ cdstrsetキーがない場合 """
+            return True
+
+        if not self.kds_crt_d_set[0][3] in self.DC[S][t]:
+            """ [0][3]無い場合 """
+            return True
+
+        if not self.kds_s_gain in self.DC[S][t]:
+            """ gainキーがない場合 """
+            return True
+
+        if g >= len(self.DC[S][t][self.kds_s_gain]):
+            """ gainキーがあってもgenerationがない場合 """
+            return True
+
+        if self.DC[S][t][self.kds_crt_d_set[0][3]] < self.kds_s_last_lim[ctype]:
+            """ [0][3]が最低限を満たしていない場合 """
+            return True
+
+        return False
+
+
+    def create_cd_templates_ses(self, m=None, s=None, e=None, c=None, g=0, h=0, ctype=0):
         """ 関数にばらしてみたけど・・・ """
         if not m or not s or not e or not c:
-            return None
+            return False
 
+        k = "accessible-" + self.kds_symbols
+        I = {"A":[], 't': 0, 'h':0, 'H':(0.5 - h) * 1e7, 'B':(0.5 - h) * 1e7,}
         for S in sorted(self.DC.keys()):
-            k = "accessible-" + self.kds_symbols
-            I = {"T":[], 'L':(0.5 - h) * 200, 't':0, 'b':0, 'h':0}
-            if not S:
-                """ ないとはおもうが Symbolが空の場合 """
-                continue
-
-            if m != self.DP[k][S][self.kds_s_mst] and m != 'all':
-                """ mst 不一致で allでもない場合 """
-                continue
-
-            if s != self.DP[k][S][self.kds_s_sec] and s != 'all':
-                """ sec 不一致で allでもない場合 """
-                continue
-
-            if e != self.DP[k][S][self.kds_s_elk] and e != 'all':
-                """ slk 不一致で allでもない場合 """
+            if self.create_cd_templates_ses_ck_Sloop(S, k, m, s, e):
                 continue
 
             for t in  sorted(self.DC[S].keys()):
-                """ t は時間
-                print(S, s, e, c, g, h, self.epoch_second_to_ymdhms(t))
-                """
-                if (
-                    not self.kds_crt_d_set[0][3] in self.DC[S][t] or
-                    not self.kds_s_gain in self.DC[S][t]
-                ):
-                    """ 0-3クローズがない場合、gainキーがない場合 """
+                if self.create_cd_templates_ses_ck_tloop(t, S, c, g, ctype):
                     continue
 
-                if g >= len(self.DC[S][t][self.kds_s_gain]):
-                    """ gainキーはあっても配列に対象がいない場合 """
-                    continue
-
-                if not c in self.DC[S][t]:
-                    """ cdstrsetキーはあっても配列に対象がいない場合 """
-                    continue
-
-
+                """ 合計数を1増加させる """
                 I['t'] += 1
                 """ 利得pの計算 """
                 p  = self.DC[S][t][self.kds_s_gain][g][h] + 1
@@ -557,46 +603,48 @@ class Symbols():
                 if h == 0:
                     """ さがりぎみ """
                     if p > self.kds_tgt_gain / 100:
-                        """ blowした """
-                        I['T'].append(self.DC[S][t][c])
+                        """ HitしたのでHit条件を記録 """
+                        I['A'].append(self.DC[S][t][c])
+                        if I['H'] > self.DC[S][t][c]:
+                            I['H'] = self.DC[S][t][c]
                     else:
-                        print(S, h, p, c, self.DC[S][t][c], g, h, self.DC[S][t][self.kds_s_gain][g][h], self.DC[S][t])
+                        """ HitしなかったのでBlow条件を記録 """
+                        if I['B'] > self.DC[S][t][c]:
+                            I['B'] = self.DC[S][t][c]
                 else:
                     """ あがりぎみ """
                     if p < self.kds_tgt_gain / -100:
-                        """ blowした """
-                        I['T'].append(self.DC[S][t][c])
-                        #print(S, h, p, c, self.DC[S][t][c], g, h, self.DC[S][t][self.kds_s_gain][g][h], self.DC[S][t])
+                        """ HitしたのでHit条件を記録 """
+                        I['A'].append(self.DC[S][t][c])
+                        if I['H'] < self.DC[S][t][c]:
+                            I['H'] = self.DC[S][t][c]
+                    else:
+                        """ HitしなかったのでBlow条件を記録 """
+                        if I['B'] < self.DC[S][t][c]:
+                            I['B'] = self.DC[S][t][c]
 
+        """ 集計 """
+        if h == 0: 
+            if I['H'] >= I['B']:
+                return False
 
-            return True
+            for i in I['A']:
+                if i < I['B']:
+                    I['h'] += 1
 
-
-    def create_cd_templates_ses_s(self, m=None, s=None, e=None, c=None, g=0, h=0, symbol=None):
-        """ こういう書き方でいいのかねぇ・・・ 
-        良くないので消す予定。
-        """
-        if not symbol:
-            return None
-
-        if (
-            (m == self.DP[k][symbol][self.kds_s_mst] or m == 'all') and
-            (s == self.DP[k][symbol][self.kds_s_sec] or s == 'all') and
-            (e == self.DP[k][symbol][self.kds_s_elk] or e == 'all')
-        ):
-            
-            """ h[0, 1] -> l[1, 0] """
-        
-            print(m, s, e, c, g, h, I, self.DC[symbol][t])
-
-
-
-
-                    
-
-            return True
         else:
-            return None
+            if I['H'] <= I['B']:
+                return False
+
+            for i in I['A']:
+                if i > I['B']:
+                    I['h'] += 1
+
+        del(I['A'])
+        I['r'] = I['h'] / I['t'] * 1e3
+        return I
+
+
 
 
 
