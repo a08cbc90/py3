@@ -439,6 +439,7 @@ class Symbols():
                 self.add_crt_gains(symbol)
 
             self.create_cd_templates(ctype)
+            self.search_cd_match(ctype)
         return None
 
 
@@ -644,6 +645,32 @@ class Symbols():
         I['r'] = I['h'] / I['t'] * 1e3
         return I
 
+    def search_cd_match(self, ctype=0):
+        """ closeを調整し、パターンに一致するシンボルを検索していく
+        """
+
+        if not self.DP['cd'][ctype]:
+            return False
+
+        k = "accessible-" + self.kds_symbols
+        for S in sorted(self.DP[k].keys()):
+            if not self.kds_s_mst in self.DP[k][S]:
+                continue
+            mst = self.DP[k][S][self.kds_s_mst]
+            if not self.kds_s_sec in self.DP[k][S]:
+                continue
+            sec = self.DP[k][S][self.kds_s_sec]
+            if not self.kds_s_elk in self.DP[k][S]:
+                continue
+            elk = self.DP[k][S][self.kds_s_elk]
+            print(S, mst, sec, elk)
+            """
+
+
+                    for cdstrset in list(itertools.chain.from_iterable(self.kds_crt_d_set[5:7])):
+                        ''' cdstrsetはKeyName(str) '''
+                        self.DP['cd'][ctype][mst][sec][elk][cdstrset] = [None] * self.kds_cd_gen_num
+                        """
 
 
 
