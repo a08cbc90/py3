@@ -645,6 +645,25 @@ class Symbols():
         I['r'] = I['h'] / I['t'] * 1e3
         return I
 
+    def search_cd_match_ph(self, S=None, ct=0, ml=None, sl=None, el=None, cl=None, gl=None, hl=None):
+        if not S or not ml or not sl or not el or not cl or not gl or not hl:
+            return False
+
+        for m in ml:
+            for s in sl:
+                for e in el:
+                    for c in cl:
+                        for g in gl:
+                            for h in hl:
+                                print(S,ml, sl, el, cl, gl, hl)
+                                if not self.DP['cd'][ct][m][s][e][c][g][h]:
+                                    continue
+                                r = self.DP['cd'][ct][m][s][e][c][g][h]
+
+                                print(S, r)
+        pass
+
+
     def search_cd_match(self, ctype=0):
         """ closeを調整し、パターンに一致するシンボルを検索していく
         """
@@ -654,17 +673,35 @@ class Symbols():
 
         k = "accessible-" + self.kds_symbols
         for S in sorted(self.DP[k].keys()):
-            if not self.kds_s_mst in self.DP[k][S]:
+            if not self.kds_s_mst in self.DP[k][S] and not self.DP[k][S][self.kds_s_mst]:
                 continue
-            mst = self.DP[k][S][self.kds_s_mst]
-            if not self.kds_s_sec in self.DP[k][S]:
+
+            mst_list = [self.DP[k][S][self.kds_s_mst], 'all']
+            
+            if not self.kds_s_sec in self.DP[k][S] and not self.DP[k][S][self.kds_s_sec]:
                 continue
-            sec = self.DP[k][S][self.kds_s_sec]
-            if not self.kds_s_elk in self.DP[k][S]:
+
+            sec_list = [self.DP[k][S][self.kds_s_sec], 'all']
+
+            if not self.kds_s_elk in self.DP[k][S] and not self.DP[k][S][self.kds_s_elk]:
                 continue
-            elk = self.DP[k][S][self.kds_s_elk]
-            print(S, mst, sec, elk)
+
+            elk_list = [self.DP[k][S][self.kds_s_elk], 'all']
+
+            cd_list = list(itertools.chain.from_iterable(self.kds_crt_d_set[5:7]))
+
+            gen_list = range(self.kds_cd_gen_num)
+            h_list = []
+            if mst_list[0] != self.kds_crt_urika:
+                """ mstによっては計算不要なものがある """
+                h_list = range(1)
+            else:
+                h_list = range(2)
+
+            self.search_cd_match_ph(S, ctype, mst_list, sec_list, elk_list, cd_list, gen_list, h_list)
+
             """
+            print(S, mst_list, sec_list, elk_list, cd_list, gen_list, h_list)
 
 
                     for cdstrset in list(itertools.chain.from_iterable(self.kds_crt_d_set[5:7])):
