@@ -642,24 +642,28 @@ class Symbols():
                     I['h'] += 1
 
         del(I['A'])
-        I['r'] = I['h'] / I['t'] * 1e3
+        I['r'] = I['h'] / I['t']
         return I
 
     def search_cd_match_ph(self, S=None, ct=0, ml=None, sl=None, el=None, cl=None, gl=None, hl=None):
         if not S or not ml or not sl or not el or not cl or not gl or not hl:
             return False
 
+        k = "accessible-" + self.kds_symbols
         for m in ml:
             for s in sl:
                 for e in el:
                     for c in cl:
                         for g in gl:
                             for h in hl:
-                                print(S,ml, sl, el, cl, gl, hl)
                                 if not self.DP['cd'][ct][m][s][e][c][g][h]:
                                     continue
-                                r = self.DP['cd'][ct][m][s][e][c][g][h]
+                                p = self.DP['cd'][ct][m][s][e][c][g][h]
 
+                                """ cd計算 """
+
+
+                                print(S,ml, sl, el, cl, gl, hl)
                                 print(S, r)
         pass
 
@@ -673,21 +677,22 @@ class Symbols():
 
         k = "accessible-" + self.kds_symbols
         for S in sorted(self.DP[k].keys()):
-            if not self.kds_s_mst in self.DP[k][S] and not self.DP[k][S][self.kds_s_mst]:
-                continue
-
-            mst_list = [self.DP[k][S][self.kds_s_mst], 'all']
+            if self.kds_s_mst in self.DP[k][S] and self.DP[k][S][self.kds_s_mst]:
+                mst_list = [self.DP[k][S][self.kds_s_mst], 'all']
+            else:
+                mst_list = ['all']
             
-            if not self.kds_s_sec in self.DP[k][S] and not self.DP[k][S][self.kds_s_sec]:
-                continue
+            if self.kds_s_sec in self.DP[k][S] and self.DP[k][S][self.kds_s_sec]:
+                sec_list = [self.DP[k][S][self.kds_s_sec], 'all']
+            else:
+                sec_list = ['all']
 
-            sec_list = [self.DP[k][S][self.kds_s_sec], 'all']
-
-            if not self.kds_s_elk in self.DP[k][S] and not self.DP[k][S][self.kds_s_elk]:
-                continue
+            if self.kds_s_elk in self.DP[k][S] and self.DP[k][S][self.kds_s_elk]:
+                elk_list = [self.DP[k][S][self.kds_s_elk], 'all']
+            else:
+                elk_list = ['all']
 
             elk_list = [self.DP[k][S][self.kds_s_elk], 'all']
-
             cd_list = list(itertools.chain.from_iterable(self.kds_crt_d_set[5:7]))
 
             gen_list = range(self.kds_cd_gen_num)
