@@ -169,7 +169,7 @@ class Util():
         return os.path.isfile(filepath)
 
 
-    def rj(self, filepath='/dev/null'):
+    def rj(self, filepath='/dev/null', errstop=True):
         """ ReadJson
         filepath の中身がjsonだと仮定して取得を試み
         読み込んだ内容を返す。
@@ -185,8 +185,12 @@ class Util():
             with open(filepath) as jp:
                 j = json.load(jp)
         except AttributeError: 
+            if errstop:
+                raise
             return None
         except ValueError: 
+            if errstop:
+                raise
             return None
 
         return j
