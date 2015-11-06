@@ -506,6 +506,21 @@ class Symbols():
         """ カテゴリ別cd元データを作成する
         """
         self.DP['cd'][ctype] = {}
+        savefile = self.kg_dat_dir + '/cd%d' % ctype + self.kds_crt_dat_nm
+        if self.kds_crt_dat_lt:
+            file_avail = self.file_timestamp_delay(savefile) / 60
+            if file_avail > self.kds_crt_dat_lt:
+                self.rm(savefile)
+
+            else:
+                """ そのデータを更新して返す """
+                crt_cd0_json = self.rf(savefile)
+                crt_cd0_json = json.loads(crt_cd0_json)
+                for key in crt_cd0_json.keys():
+                    self.DP['cd'][ctype] = crt_cd0_json
+
+                return sorted(self.DP['cd'][ctype])
+
         for mst in  self.DP[self.kds_s_mst] + ['all']:
             self.DP['cd'][ctype][mst] = {}
             for sec in self.DP[self.kds_s_sec] + ['all']:
@@ -523,10 +538,18 @@ class Symbols():
                                 """ h は配列添え字(int) """
                                 if self.create_cd_templates_ck_hloop(mst, h):
                                     continue
+
                                 I = self.create_cd_templates_ses(mst, sec, elk, cdstrset, generation, h, ctype)
                                 if I:
                                     self.DP['cd'][ctype][mst][sec][elk][cdstrset][generation][h] = I
-        print(self.DP['cd'][ctype] )
+
+        if self.kds_crt_dat_lt and file_avail > self.kds_crt_dat_lt:
+            """ crt_dat_ltが設定されている場合
+            かつ、期限が切れている場合ファイルに保存する """
+            crt_cd0_json = json.dumps(self.DP['cd'][ctype])
+            self.wf(savefile, crt_cd0_json)
+
+        return self.DP['cd'][ctype]
 
 
     def create_cd_templates_ses_ck_Sloop(self, S=None, k=None, m=None, s=None, e=None):
@@ -650,6 +673,7 @@ class Symbols():
             return False
 
         k = "accessible-" + self.kds_symbols
+        score = {'t': 0,'c': 0, 'l':[],}
         for m in ml:
             for s in sl:
                 for e in el:
@@ -661,11 +685,41 @@ class Symbols():
                                 p = self.DP['cd'][ct][m][s][e][c][g][h]
 
                                 """ cd計算 """
+                                days = int(re.sub(r'[^0-9]*', '', c))
+                                tmp_min1_list = sorted(self.DC[S].keys())[-days:-1]
+                                tmp_c = self.kds_crt_d_set[0][3]
+                                malis = [self.DC[S][x][tmp_c] for x in tmp_min1_list] + [self.DP[k][S][self.kds_s_last]]
+                                ma = sum(malis) / days
+                                cd = (self.DP[k][S][self.kds_s_last] / ma - 1) * 100
+                                score['t'] += p['t']
 
+                                if h == 0:
+                                    if p['B'] > cd:
+                                        score['c'] += p['t']
+                                        m1 = re.search(r'(.)$', m).group(1)
+                                        s1 = re.search(r'(.)$', s).group(1)
+                                        e1 = re.search(r'(.{3,4})$', e).group(1)
+                                        c1 = re.search(r'(\d*)$', c).group(1)
+                                        score['l'].append(
+                                            "%11.3f %7.3f %7.3f, %s,%s,%4s,%2s,%d,%d"
+                                          % (self.DP[k][S][self.kds_s_last], p['B'], cd, m1, s1, e1, c1, g, h)
+                                        )
 
-                                print(S,ml, sl, el, cl, gl, hl)
-                                print(S, r)
-        pass
+                                else:
+                                    if p['B'] < cd:
+                                        score['c'] += p['t']
+                                        m1 = re.search(r'(.)$', m).group(1)
+                                        s1 = re.search(r'(.)$', s).group(1)
+                                        e1 = re.search(r'(.{3,4})$', e).group(1)
+                                        c1 = re.search(r'(\d*)$', c).group(1)
+                                        score['l'].append(
+                                            "%11.3f %7.3f %7.3f, %s,%s,%4s,%2s,%d,%d"
+                                          % (self.DP[k][S][self.kds_s_last], p['B'], cd, m1, s1, e1, c1, g, h)
+                                        )
+
+        if score['c']:
+            score['p'] = score['c'] / score['t'] * 100
+            return score
 
 
     def search_cd_match(self, ctype=0):
@@ -676,6 +730,7 @@ class Symbols():
             return False
 
         k = "accessible-" + self.kds_symbols
+        R = []
         for S in sorted(self.DP[k].keys()):
             if self.kds_s_mst in self.DP[k][S] and self.DP[k][S][self.kds_s_mst]:
                 mst_list = [self.DP[k][S][self.kds_s_mst], 'all']
@@ -703,16 +758,16 @@ class Symbols():
             else:
                 h_list = range(2)
 
-            self.search_cd_match_ph(S, ctype, mst_list, sec_list, elk_list, cd_list, gen_list, h_list)
-
-            """
-            print(S, mst_list, sec_list, elk_list, cd_list, gen_list, h_list)
-
-
-                    for cdstrset in list(itertools.chain.from_iterable(self.kds_crt_d_set[5:7])):
-                        ''' cdstrsetはKeyName(str) '''
-                        self.DP['cd'][ctype][mst][sec][elk][cdstrset] = [None] * self.kds_cd_gen_num
-                        """
+            r = self.search_cd_match_ph(S, ctype, mst_list, sec_list, elk_list, cd_list, gen_list, h_list)
+            if r:
+                R.append(r)
+        
+        for r in sorted(R, key=lambda k: k['p'], reverse=True):
+            """ 一定の成果を出力 """
+            print(
+               "Symbol: %s Score: %8d Share: %7.3f%% Count: %2d" %(S, r['c'], r['p'], len(r['l'])),
+            )
+            print(json.dumps(sorted(r['l']), indent=4))
 
 
 
