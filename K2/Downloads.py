@@ -431,10 +431,10 @@ class Symbols():
     def add_crts_gains(self):
         """ 各crtデータから各利得を集計する。
         """
-        self.DP['cd'] =[None] * 1
+        self.DP[self.kds_crt_cd] =[None] * 1
         for ctype in range(1):
             """ ctypeは足の種類 """
-            self.DP['cd'][ctype] = {}
+            self.DP[self.kds_crt_cd][ctype] = {}
             for symbol in self.DC.keys():
                 self.add_crt_gains(symbol)
 
@@ -505,7 +505,7 @@ class Symbols():
     def create_cd_templates(self, ctype=0):
         """ カテゴリ別cd元データを作成する
         """
-        self.DP['cd'][ctype] = {}
+        self.DP[self.kds_crt_cd][ctype] = {}
         savefile = self.kg_dat_dir + '/cd%d' % ctype + self.kds_crt_dat_nm
         if self.kds_crt_dat_lt:
             file_avail = self.file_timestamp_delay(savefile) / 60
@@ -517,23 +517,23 @@ class Symbols():
                 crt_cd0_json = self.rf(savefile)
                 crt_cd0_json = json.loads(crt_cd0_json)
                 for key in crt_cd0_json.keys():
-                    self.DP['cd'][ctype] = crt_cd0_json
+                    self.DP[self.kds_crt_cd][ctype] = crt_cd0_json
 
-                return sorted(self.DP['cd'][ctype])
+                return sorted(self.DP[self.kds_crt_cd][ctype])
 
-        for mst in  self.DP[self.kds_s_mst] + ['all']:
-            self.DP['cd'][ctype][mst] = {}
-            for sec in self.DP[self.kds_s_sec] + ['all']:
-                self.DP['cd'][ctype][mst][sec] = {}
-                for elk in self.DP[self.kds_s_elk] + ['all']:
-                    self.DP['cd'][ctype][mst][sec][elk] = {}
+        for mst in  self.DP[self.kds_s_mst] + ['ALL']:
+            self.DP[self.kds_crt_cd][ctype][mst] = {}
+            for sec in self.DP[self.kds_s_sec] + ['ALL']:
+                self.DP[self.kds_crt_cd][ctype][mst][sec] = {}
+                for elk in self.DP[self.kds_s_elk] + ['ALL']:
+                    self.DP[self.kds_crt_cd][ctype][mst][sec][elk] = {}
                     for cdstrset in list(itertools.chain.from_iterable(self.kds_crt_d_set[5:7])):
                         """ cdstrsetはKeyName(str) """
-                        self.DP['cd'][ctype][mst][sec][elk][cdstrset] = [None] * self.kds_cd_gen_num
+                        self.DP[self.kds_crt_cd][ctype][mst][sec][elk][cdstrset] = [None] * self.kds_cd_gen_num
                         for generation in range(self.kds_cd_gen_num):
 
                             """ generationは世代数(int) """
-                            self.DP['cd'][ctype][mst][sec][elk][cdstrset][generation] = [None] * 2
+                            self.DP[self.kds_crt_cd][ctype][mst][sec][elk][cdstrset][generation] = [None] * 2
                             for h in range(2):
                                 """ h は配列添え字(int) """
                                 if self.create_cd_templates_ck_hloop(mst, h):
@@ -541,15 +541,15 @@ class Symbols():
 
                                 I = self.create_cd_templates_ses(mst, sec, elk, cdstrset, generation, h, ctype)
                                 if I:
-                                    self.DP['cd'][ctype][mst][sec][elk][cdstrset][generation][h] = I
+                                    self.DP[self.kds_crt_cd][ctype][mst][sec][elk][cdstrset][generation][h] = I
 
         if self.kds_crt_dat_lt and file_avail > self.kds_crt_dat_lt:
             """ crt_dat_ltが設定されている場合
             かつ、期限が切れている場合ファイルに保存する """
-            crt_cd0_json = json.dumps(self.DP['cd'][ctype])
+            crt_cd0_json = json.dumps(self.DP[self.kds_crt_cd][ctype])
             self.wf(savefile, crt_cd0_json)
 
-        return self.DP['cd'][ctype]
+        return self.DP[self.kds_crt_cd][ctype]
 
 
     def create_cd_templates_ses_ck_Sloop(self, S=None, k=None, m=None, s=None, e=None):
@@ -558,16 +558,16 @@ class Symbols():
             """ ないとはおもうが Symbolが空の場合 """
             return True
 
-        if m != self.DP[k][S][self.kds_s_mst] and m != 'all':
-            """ mst 不一致で allでもない場合 """
+        if m != self.DP[k][S][self.kds_s_mst] and m != 'ALL':
+            """ mst 不一致で ALLでもない場合 """
             return True
 
-        if s != self.DP[k][S][self.kds_s_sec] and s != 'all':
-            """ sec 不一致で allでもない場合 """
+        if s != self.DP[k][S][self.kds_s_sec] and s != 'ALL':
+            """ sec 不一致で ALLでもない場合 """
             return True
 
-        if e != self.DP[k][S][self.kds_s_elk] and e != 'all':
-            """ slk 不一致で allでもない場合 """
+        if e != self.DP[k][S][self.kds_s_elk] and e != 'ALL':
+            """ slk 不一致で ALLでもない場合 """
             return True
 
         return False
@@ -680,9 +680,9 @@ class Symbols():
                     for c in cl:
                         for g in gl:
                             for h in hl:
-                                if not self.DP['cd'][ct][m][s][e][c][g][h]:
+                                if not self.DP[self.kds_crt_cd][ct][m][s][e][c][g][h]:
                                     continue
-                                p = self.DP['cd'][ct][m][s][e][c][g][h]
+                                p = self.DP[self.kds_crt_cd][ct][m][s][e][c][g][h]
 
                                 """ cd計算 """
                                 days = int(re.sub(r'[^0-9]*', '', c))
@@ -701,7 +701,7 @@ class Symbols():
                                         e1 = re.search(r'(.{3,4})$', e).group(1)
                                         c1 = re.search(r'(\d*)$', c).group(1)
                                         score['l'].append(
-                                            "%11.3f %7.3f %7.3f, %s,%s,%4s,%2s,%d,%d"
+                                            "%10.1f %7.3f %7.3f, %s,%s,%4s,%2s,%d,%d"
                                           % (self.DP[k][S][self.kds_s_last], p['B'], cd, m1, s1, e1, c1, g, h)
                                         )
 
@@ -726,28 +726,28 @@ class Symbols():
         """ closeを調整し、パターンに一致するシンボルを検索していく
         """
 
-        if not self.DP['cd'][ctype]:
+        if not self.DP[self.kds_crt_cd][ctype]:
             return False
 
         k = "accessible-" + self.kds_symbols
         R = []
         for S in sorted(self.DP[k].keys()):
             if self.kds_s_mst in self.DP[k][S] and self.DP[k][S][self.kds_s_mst]:
-                mst_list = [self.DP[k][S][self.kds_s_mst], 'all']
+                mst_list = [self.DP[k][S][self.kds_s_mst], 'ALL']
             else:
-                mst_list = ['all']
+                mst_list = ['ALL']
             
             if self.kds_s_sec in self.DP[k][S] and self.DP[k][S][self.kds_s_sec]:
-                sec_list = [self.DP[k][S][self.kds_s_sec], 'all']
+                sec_list = [self.DP[k][S][self.kds_s_sec], 'ALL']
             else:
-                sec_list = ['all']
+                sec_list = ['ALL']
 
             if self.kds_s_elk in self.DP[k][S] and self.DP[k][S][self.kds_s_elk]:
-                elk_list = [self.DP[k][S][self.kds_s_elk], 'all']
+                elk_list = [self.DP[k][S][self.kds_s_elk], 'ALL']
             else:
-                elk_list = ['all']
+                elk_list = ['ALL']
 
-            elk_list = [self.DP[k][S][self.kds_s_elk], 'all']
+            elk_list = [self.DP[k][S][self.kds_s_elk], 'ALL']
             cd_list = list(itertools.chain.from_iterable(self.kds_crt_d_set[5:7]))
 
             gen_list = range(self.kds_cd_gen_num)
