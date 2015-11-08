@@ -374,6 +374,49 @@ class Symbols():
         return [p, crt]
 
 
+    def symbol_updates(self):
+        """ accessible_symbolの簡易版。 self.DP[k][s][keys]のみアップデートする
+        アクセス数: 最大で (1s) 回
+        アップデートしたからといってファイルに書き込むつもりはない。(今のところ)
+        """
+        k = "accessible-" + self.kds_symbols
+        for symbol in sorted(self.DP[k].keys()):
+            self.symbol_update(symbol, k)
+
+
+    def symbol_update(self, symbol=None, k=None):
+        """ accessible_symbolの簡易版。 self.DP[k][s][keys]のみアップデートする
+        アクセス数: (1) 回
+        """
+        if not symbol:
+            return False
+
+        if not re.search(self.kds_scr_regex, symbol):
+            """ [大前提]特殊シンボルは検索しない """
+            return False
+
+        if not self.kds_s_last in self.DP[k][symbol]:
+            """ 未登録のsymbolはアップデートしない """
+            return False
+
+        if not k:
+            return False
+
+        p = {}
+        deq_json = self.download_k2_deq(symbol)
+        if not deq_json:
+            """ deqを取得できなかった場合 """
+            return False
+
+        """ deq-Jsonからlast, preclose等を抽出 """
+        p = self.deq_picker(deq_json, p)
+        for key in p.keys():
+            self.DP[k][symbol][key] = p[key]
+
+        """ 直接上書きするので意味のある戻り値は返さない """
+        return True
+
+
     def get_accessible_symbols(self):
         """ アクセス可能なシンボルの全取得
         アクセス数: 最大で (3s) 回
@@ -401,9 +444,6 @@ class Symbols():
 
                 return sorted(self.DP[k].keys())
 
-        """
-        for s in self.get_all_symbols()[2000:2119]:
-        """
         for s in self.get_all_symbols():
             """ 各シンボルに対して3回のアクセスを実施して有用か否かを判断する """
             res = self.accessible_symbol(s)
@@ -428,6 +468,24 @@ class Symbols():
         return sorted(self.DP[k].keys())
 
 
+    def daytasks(self):
+        """ 初期化後まわす
+        アクセス数: 最大で (3s + 1ws) 回
+        """
+        """ 初期化 3s回 """
+        self.add_crts_gains()
+        for ctype in range(1):
+            """ ctypeは足の種類 """
+            self.search_cd_match(ctype)
+
+        for w in range(3):
+            for ctype in range(1):
+                """ ctypeは足の種類 """
+                """ アップデート w * 1s回 """
+                self.symbol_updates()
+                self.search_cd_match(ctype)
+
+
     def add_crts_gains(self):
         """ 各crtデータから各利得を集計する。
         """
@@ -439,7 +497,7 @@ class Symbols():
                 self.add_crt_gains(symbol)
 
             self.create_cd_templates(ctype)
-            self.search_cd_match(ctype)
+
         return None
 
 
@@ -668,6 +726,7 @@ class Symbols():
         I['r'] = I['h'] / I['t']
         return I
 
+
     def search_cd_match_ph(self, S=None, ct=0, ml=None, sl=None, el=None, cl=None, gl=None, hl=None):
         if not S or not ml or not sl or not el or not cl or not gl or not hl:
             return False
@@ -768,6 +827,7 @@ class Symbols():
                "Symbol: %s Score: %8d Share: %7.3f%% Count: %2d" %(S, r['c'], r['p'], len(r['l'])),
             )
             print(json.dumps(sorted(r['l']), indent=4))
+            
 
 
 
