@@ -778,6 +778,7 @@ class Symbols():
 
         if score['c']:
             score['p'] = score['c'] / score['t'] * 100
+            score['S'] = S
             return score
 
 
@@ -824,7 +825,7 @@ class Symbols():
         for r in sorted(R, key=lambda k: k['p'], reverse=True):
             """ 一定の成果を出力 """
             print(
-               "Symbol: %s Score: %8d Share: %7.3f%% Count: %2d" %(S, r['c'], r['p'], len(r['l'])),
+               "Symbol: %s Score: %8d Share: %7.3f%% Count: %2d" %(r['S'], r['c'], r['p'], len(r['l'])),
             )
             print(json.dumps(sorted(r['l']), indent=4))
             
