@@ -9,7 +9,7 @@ K2.Downloads.Symbols
     シンボル関係のダウンロードをを行う
 """
 
-import datetime, json, re, urllib.parse, itertools
+import datetime, json, re, urllib.parse, itertools, time
 class Symbols():
     """ Symbol関係
     ダウンロードとか、割り当てとか
@@ -30,6 +30,15 @@ class Symbols():
         str(14428143585) + "000" で "144281435000"
         """
         return datetime.datetime.now().strftime('%s000')
+
+
+    def todays_sec(self):
+        """ JST 00:00 から何秒経過したかを返す
+        2014/08/21  10:00:00 ならば
+        int(10*3600) で 36000
+        """
+        d = datetime.datetime.now()
+        return d.hour * 3600 + d.minute * 60 + d.second
 
 
     def get_all_symbols(self):
@@ -473,6 +482,7 @@ class Symbols():
         アクセス数: 最大で (3s + 1ws) 回
         """
         """ 初期化 3s回 """
+        modified_sec = self.todays_sec()
         self.add_crts_gains()
         for ctype in range(1):
             """ ctypeは足の種類 """
@@ -480,6 +490,12 @@ class Symbols():
 
         for w in range(3):
             for ctype in range(1):
+                now_sec = self.todays_sec()
+                if now_sec < modified_sec + 3600:
+                    """ 最低でも1時間のインターバルを置く措置 """
+                    time.sleep(modified_sec + 3600 - now_sec)
+
+                modified_sec = self.todays_sec()
                 """ ctypeは足の種類 """
                 """ アップデート w * 1s回 """
                 self.symbol_updates()
@@ -825,7 +841,9 @@ class Symbols():
         for r in sorted(R, key=lambda k: k['p'], reverse=True):
             """ 一定の成果を出力 """
             print(
-               "Symbol: %s Score: %8d Share: %7.3f%% Count: %2d" %(r['S'], r['c'], r['p'], len(r['l'])),
+                "Symbol: %s Score: %8d Share: %7.3f%% Kinds: %2d Modified: %s" % (
+                    r['S'], r['c'], r['p'], len(r['l']), self.DP[k][r['S']][self.kds_deq_pickl[0]]
+                ),
             )
             print(json.dumps(sorted(r['l']), indent=4))
             
