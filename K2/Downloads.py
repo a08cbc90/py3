@@ -483,19 +483,20 @@ class Symbols():
         """
         """ 初期化 3s回 """
         modified_sec = self.todays_sec()
+        next_clock = (int(modified_sec / 3600) + 1) * 3600
         self.add_crts_gains()
         for ctype in range(1):
             """ ctypeは足の種類 """
             self.search_cd_match(ctype)
 
-        for w in range(3):
+        for w in range(6):
             for ctype in range(1):
-                now_sec = self.todays_sec()
-                if now_sec < modified_sec + 3600:
-                    """ 最低でも1時間のインターバルを置く措置 """
-                    time.sleep(modified_sec + 3600 - now_sec)
+                if modified_sec < next_clock:
+                    """ タイミング調整 """
+                    time.sleep(next_clock - modified_sec)
 
                 modified_sec = self.todays_sec()
+                next_clock = (int(modified_sec / 3600) + 1) * 3600
                 """ ctypeは足の種類 """
                 """ アップデート w * 1s回 """
                 self.symbol_updates()
@@ -788,7 +789,7 @@ class Symbols():
                                         e1 = re.search(r'(.{3,4})$', e).group(1)
                                         c1 = re.search(r'(\d*)$', c).group(1)
                                         score['l'].append(
-                                            "%11.3f %7.3f %7.3f, %s,%s,%4s,%2s,%d,%d"
+                                            "%10.1f %7.3f %7.3f, %s,%s,%4s,%2s,%d,%d"
                                           % (self.DP[k][S][self.kds_s_last], p['B'], cd, m1, s1, e1, c1, g, h)
                                         )
 
@@ -838,14 +839,24 @@ class Symbols():
             if r:
                 R.append(r)
         
-        for r in sorted(R, key=lambda k: k['p'], reverse=True):
+        if R:
+            report = datetime.datetime.now().strftime('%y/%m/%d %H:%M:%S reporting results...')
             """ 一定の成果を出力 """
-            print(
-                "Symbol: %s Score: %8d Share: %7.3f%% Kinds: %2d Modified: %s" % (
+            for r in sorted(R, key=lambda k: k['p'], reverse=True):
+                """ サマリ部分 """
+                report += "Symbol: %s Score: %8d Share: %7.3f%% Kinds: %2d Modified: %s" % (
                     r['S'], r['c'], r['p'], len(r['l']), self.DP[k][r['S']][self.kds_deq_pickl[0]]
-                ),
-            )
-            print(json.dumps(sorted(r['l']), indent=4))
+                )
+
+            report += '===================================================================\n'
+            for r in sorted(R, key=lambda k: k['p'], reverse=True):
+                """ Full Description """
+                report += "Symbol: %s Score: %8d Share: %7.3f%% Kinds: %2d Modified: %s" % (
+                    r['S'], r['c'], r['p'], len(r['l']), self.DP[k][r['S']][self.kds_deq_pickl[0]]
+                )
+                report += json.dumps(sorted(r['l']), indent=4)
+
+            print(report)
             
 
 
