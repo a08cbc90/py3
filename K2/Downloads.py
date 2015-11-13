@@ -844,14 +844,14 @@ class Symbols():
             """ 一定の成果を出力 """
             for r in sorted(R, key=lambda k: k['p'], reverse=True):
                 """ サマリ部分 """
-                report += "Symbol: %s Score: %8d Share: %7.3f%% Kinds: %2d Modified: %s" % (
+                report += "Symbol: %s Score: %8d Share: %7.3f%% Kinds: %2d Modified: %s\n" % (
                     r['S'], r['c'], r['p'], len(r['l']), self.DP[k][r['S']][self.kds_deq_pickl[0]]
                 )
 
             report += '===================================================================\n'
             for r in sorted(R, key=lambda k: k['p'], reverse=True):
                 """ Full Description """
-                report += "Symbol: %s Score: %8d Share: %7.3f%% Kinds: %2d Modified: %s" % (
+                report += "Symbol: %s Score: %8d Share: %7.3f%% Kinds: %2d Modified: %s\n" % (
                     r['S'], r['c'], r['p'], len(r['l']), self.DP[k][r['S']][self.kds_deq_pickl[0]]
                 )
                 report += json.dumps(sorted(r['l']), indent=4)
