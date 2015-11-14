@@ -550,7 +550,22 @@ class HttpClient(Util):
         self.ht_save_cookie()
         return download_data
 
+    def mail(self, sj='', fm='', to='', bd=''):
+        ''' Server Side Settings '''
+        ms = ms or "mailserver.anyway.example.co.jp"
+        sp = sp or 587
+        id = id or "SadlyMyIdHasGone.."
+        pw = pw or "By The Way, Could you see that 1?"
+        sj = sj or '中国の劇場前にある名探偵コナンの等身大フィギュアが怖すぎると話題に'
+        fm = fm or 'defaultuser@anyway.example.co.jp'
+        to = to or 'vividvervet@ubuntu.debian.or.jp'
+        bd = bd or '''中国で10月23日から上映されている「名探偵コナン 業火の向日葵」がかなり好評。
+        それにあわせて劇場前には等身大フィギュアが設置されている。この展示物フィギュアの
+        質が悪いと中国で酷評されているのだ。
+        中国のネットユーザは「どうみても老人だろ」「眉毛はどこ？」「粗悪だ...」と書かれている。
+        パネルは公式っぽいが設置された等身大フィギュアは劇場が宣伝の為に作ったと思われる。'''
 
+        pass
 
 
 
