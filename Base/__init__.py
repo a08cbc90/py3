@@ -550,23 +550,65 @@ class HttpClient(Util):
         self.ht_save_cookie()
         return download_data
 
-    def mail(self, sj='', fm='', to='', bd=''):
-        ''' Server Side Settings '''
-        ms = ms or "mailserver.anyway.example.co.jp"
-        sp = sp or 587
-        id = id or "SadlyMyIdHasGone.."
-        pw = pw or "By The Way, Could you see that 1?"
-        sj = sj or '中国の劇場前にある名探偵コナンの等身大フィギュアが怖すぎると話題に'
-        fm = fm or 'defaultuser@anyway.example.co.jp'
-        to = to or 'vividvervet@ubuntu.debian.or.jp'
-        bd = bd or '''中国で10月23日から上映されている「名探偵コナン 業火の向日葵」がかなり好評。
-        それにあわせて劇場前には等身大フィギュアが設置されている。この展示物フィギュアの
-        質が悪いと中国で酷評されているのだ。
-        中国のネットユーザは「どうみても老人だろ」「眉毛はどこ？」「粗悪だ...」と書かれている。
-        パネルは公式っぽいが設置された等身大フィギュアは劇場が宣伝の為に作ったと思われる。'''
 
-        pass
 
+import smtplib, base64
+class Mail(Util):
+    """ mail server に接続するためのクラス
+    """
+    def __init__(self):
+        Util.__init__(self)
+        mailconf = self.i_conf_dir + '/mailconfig.json'
+        j = self.rj(mailconf)
+        for x, y in j['Base.Mail'].items():
+            setattr(self, x, y)
+
+
+    def mail(self, sj='', bd='', to='', fm='',
+        ms='', sp='', un='', pw='', dl=0):
+        ''' Server Side Settings
+        sj: SubJect
+        bd: BoDy
+        to: TO
+        fm: FroM
+        ms: Mail Server
+        sp: Server Port
+        un: User Name
+        pw: PassWord
+        dl: Debug Level
+        '''
+        b64_slice = 76
+        sj = sj or self.mail_sj or '中国の劇場前にある名探偵コナンの等身大フィギュアが怖すぎると話題に'
+        bd = bd or self.mail_bd or '''中国で10月23日から上映されている「名探偵コナン 業火の向日葵」がかなり好評。
+それにあわせて劇場前には等身大フィギュアが設置されている。この展示物フィギュアの
+質が悪いと中国で酷評されているのだ。
+中国のネットユーザは「どうみても老人だろ」「眉毛はどこ？」「粗悪だ...」と書かれている。
+パネルは公式っぽいが設置された等身大フィギュアは劇場が宣伝の為に作ったと思われる。'''
+        to = to or self.mail_to or 'vividvervet@ubuntu.debian.or.jp'
+        fm = fm or self.mail_fm or 'defaultuser@anyway.example.co.jp'
+        ms = ms or self.mail_ms or "mailserver.anyway.example.co.jp"
+        sp = sp or self.mail_sp or 587
+        un = un or self.mail_un or "SadlyMyIdHasGone.."
+        pw = pw or self.mail_pw or "By The Way, Could you see that 1?"
+        dl = dl or self.mail_dl or 0
+
+        ''' Encoding & create mail text '''
+        mtext  = 'Subject: =?UTF-8?B?%s?=\n' % base64.b64encode(sj.encode()).decode()
+        mtext += 'Content-Type: text/plain; charset=UTF-8\n'
+        mtext += 'Content-Transfer-Encoding: base64\n\n'
+        bd = base64.b64encode(bd.encode()).decode()
+        while bd:
+            mtext += bd[:b64_slice] + '\n'
+            bd = bd[b64_slice:]
+
+        ''' Connecting & sending '''
+        smtp_obj = smtplib.SMTP(ms, sp)
+        smtp_obj.set_debuglevel(dl)
+        smtp_obj.ehlo_or_helo_if_needed()
+        smtp_obj.starttls()
+        smtp_obj.login(un, pw)
+        smtp_obj.sendmail(fm, to, mtext)
+        smtp_obj.quit()
 
 
 
