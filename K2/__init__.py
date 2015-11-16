@@ -17,6 +17,7 @@ import datetime, re, hashlib, base64
 
 class Gen(
     Base.HttpClient,
+    Base.Mail,
     K2.Downloads.Symbols,
 ):
     """ 金のジェネレータークラス2号君
@@ -27,6 +28,7 @@ class Gen(
         ドメイン名やら、データフォルダやらを書きまくるので少し長い。
         """
         Base.HttpClient.__init__(self)
+        Base.Mail.__init__(self)
         K2.Downloads.Symbols.__init__(self)
         j = self.rj(self.i_conf)
         for x, y in j['K2.Gen'].items():
