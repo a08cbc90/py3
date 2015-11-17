@@ -1,0 +1,14 @@
+{
+    "Base.Mail": {
+        "mail_sj"   : "# mail SubJect",
+        "mail_fm"   : "# From",
+        "mail_to"   : "# To",
+        "mail_bd"   : "# mail BoDy",
+        "mail_ms"   : "# Mail Server address",
+        "mail_sp"   : "# mail Server Port number",
+        "mail_un"   : "# account User Name",
+        "mail_pw"   : "# account Pass Word"
+        "mail_dl"   : "# Debug Level",
+        "mail_dl"   : 0
+    }
+}
