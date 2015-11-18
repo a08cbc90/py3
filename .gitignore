@@ -1,4 +1,5 @@
 conf/config.json
+conf/mailconfig.json
 *.py[cod]
 *.swp
 log/
