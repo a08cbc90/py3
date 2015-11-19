@@ -25,4 +25,6 @@ knnnrhk-2nd
 
 ### cron
 crontab -e example
+
+
     0 8 * * * /home/user/anyware/script.py >/dev/null 2>/dev/null
