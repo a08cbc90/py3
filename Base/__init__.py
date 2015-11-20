@@ -26,6 +26,11 @@ class Util():
             i_conf_dir: コンフィグディレクトリ(あまり変えたくない)'./conf'
             i_tmp_dir :  一時ディレクトリ
         """
+        """ スクリプトディレクトリからワーキングディレクトリの導出 """
+        workdir = re.search(r'(.*/)', __file__).group(0) + "../"
+        """ ワーキングディレクトリへ(無条件に)移動 """
+        os.chdir(workdir)
+
         self.i_conf = 'conf/config.json'
         j = self.rj(self.i_conf)
         for atr, val in j['Base.Util'].items():
@@ -92,6 +97,13 @@ class Util():
         self.i_log_path にロギングする(ERROR)
         """
         self.L.error(string)
+
+
+    def logi(self, string):
+        """ ロギング&プリント
+        self.i_log_path にロギングする(INFO)
+        """
+        self.L.info(string)
 
 
     def logw(self, string):
