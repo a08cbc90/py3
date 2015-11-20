@@ -840,7 +840,7 @@ class Symbols():
                 R.append(r)
         
         if R:
-            report = datetime.datetime.now().strftime('%y/%m/%d %H:%M:%S reporting results...')
+            report = datetime.datetime.now().strftime('%y/%m/%d %H:%M:%S reporting results...\n')
             """ 一定の成果を出力 """
             for r in sorted(R, key=lambda k: k['p'], reverse=True):
                 """ サマリ部分 """
@@ -848,15 +848,18 @@ class Symbols():
                     r['S'], r['c'], r['p'], len(r['l']), self.DP[k][r['S']][self.kds_deq_pickl[0]]
                 )
 
-            report += '===================================================================\n'
+            report += '=================================================================\n'
             for r in sorted(R, key=lambda k: k['p'], reverse=True):
                 """ Full Description """
                 report += "Symbol: %s Score: %8d Share: %7.3f%% Kinds: %2d Modified: %s\n" % (
                     r['S'], r['c'], r['p'], len(r['l']), self.DP[k][r['S']][self.kds_deq_pickl[0]]
                 )
-                report += json.dumps(sorted(r['l']), indent=4)
+                report += "URL: %s\n" % (self.k2_jso_site + self.kds_sum_dir + r['S'])
+                report += json.dumps(sorted(r['l']), indent=4) + '\n'
 
-            print(report)
+            report = re.sub(r'[\[\]]\n', '', report, self.k2_re)
+            self.mail("定時集計結果", report)
+            self.logi(report)
             
 
 
