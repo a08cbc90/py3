@@ -22,6 +22,8 @@ class Symbols():
         for x, y in j['K2.Downloads.Symbols'].items():
             x = "kds_" + x
             setattr(self, x, y)
+        self.kds_acs_sym += self.kds_symbols
+        self.kds_all_sym += self.kds_symbols
 
 
     def kds_sec(self):
@@ -47,11 +49,10 @@ class Symbols():
         固有シンボル + メインシンボル
         ただし、多数のアクセス不可能なシンボルも混ざっていることに注意
         """
-        k  = "all-" + self.kds_symbols
-        if not k in self.DC:
-            self.DP[k] = self.kds_c_symbols + self.get_main_symbols()
+        if not self.kds_all_sym in self.DC:
+            self.DP[self.kds_all_sym] = self.kds_c_symbols + self.get_main_symbols()
 
-        return self.DP[k]
+        return self.DP[self.kds_all_sym]
 
 
     def get_main_symbols(self):
@@ -285,11 +286,10 @@ class Symbols():
         集めたデータは self.DP[self.kds_s_sec] で保存する
         """
         s_sec = set()
-        k = "accessible-" + self.kds_symbols
-        for s in self.DP[k]:
-            if self.kds_s_sec in self.DP[k][s]:
-                if self.DP[k][s][self.kds_s_sec]:
-                    s_sec.add(self.DP[k][s][self.kds_s_sec])
+        for s in self.DP[self.kds_acs_sym]:
+            if self.kds_s_sec in self.DP[self.kds_acs_sym][s]:
+                if self.DP[self.kds_acs_sym][s][self.kds_s_sec]:
+                    s_sec.add(self.DP[self.kds_acs_sym][s][self.kds_s_sec])
 
         self.DP[self.kds_s_sec] = list(s_sec)
         return self.DP[self.kds_s_sec]
@@ -300,11 +300,10 @@ class Symbols():
         集めたデータは self.DP[self.kds_s_mst] で保存する
         """
         s_mst = set()
-        k = "accessible-" + self.kds_symbols
-        for s in self.DP[k]:
-            if self.kds_s_mst in self.DP[k][s]:
-                if self.DP[k][s][self.kds_s_mst]:
-                    s_mst.add(self.DP[k][s][self.kds_s_mst])
+        for s in self.DP[self.kds_acs_sym]:
+            if self.kds_s_mst in self.DP[self.kds_acs_sym][s]:
+                if self.DP[self.kds_acs_sym][s][self.kds_s_mst]:
+                    s_mst.add(self.DP[self.kds_acs_sym][s][self.kds_s_mst])
 
         self.DP[self.kds_s_mst] = list(s_mst)
         return self.DP[self.kds_s_mst]
@@ -315,11 +314,10 @@ class Symbols():
         集めたデータは self.DP[self.kds_s_elk] で保存する
         """
         s_elk = set()
-        k = "accessible-" + self.kds_symbols
-        for s in self.DP[k]:
-            if self.kds_s_elk in self.DP[k][s]:
-                if self.DP[k][s][self.kds_s_elk]:
-                    s_elk.add(self.DP[k][s][self.kds_s_elk])
+        for s in self.DP[self.kds_acs_sym]:
+            if self.kds_s_elk in self.DP[self.kds_acs_sym][s]:
+                if self.DP[self.kds_acs_sym][s][self.kds_s_elk]:
+                    s_elk.add(self.DP[self.kds_acs_sym][s][self.kds_s_elk])
 
         self.DP[self.kds_s_elk] = list(s_elk)
         return self.DP[self.kds_s_elk]
@@ -384,17 +382,16 @@ class Symbols():
 
 
     def symbol_updates(self):
-        """ accessible_symbolの簡易版。 self.DP[k][s][keys]のみアップデートする
+        """ self.kds_acs_symの簡易版。 self.DP[self.kds_acs_sym][s][keys]のみアップデートする
         アクセス数: 最大で (1s) 回
         アップデートしたからといってファイルに書き込むつもりはない。(今のところ)
         """
-        k = "accessible-" + self.kds_symbols
-        for symbol in sorted(self.DP[k].keys()):
-            self.symbol_update(symbol, k)
+        for symbol in sorted(self.DP[self.kds_acs_sym].keys()):
+            self.symbol_update(symbol)
 
 
-    def symbol_update(self, symbol=None, k=None):
-        """ accessible_symbolの簡易版。 self.DP[k][s][keys]のみアップデートする
+    def symbol_update(self, symbol=None):
+        """ self.kds_acs_symの簡易版。 self.DP[self.kds_acs_sym][s][keys]のみアップデートする
         アクセス数: (1) 回
         """
         if not symbol:
@@ -404,11 +401,8 @@ class Symbols():
             """ [大前提]特殊シンボルは検索しない """
             return False
 
-        if not self.kds_s_last in self.DP[k][symbol]:
+        if not self.kds_s_last in self.DP[self.kds_acs_sym][symbol]:
             """ 未登録のsymbolはアップデートしない """
-            return False
-
-        if not k:
             return False
 
         p = {}
@@ -420,7 +414,7 @@ class Symbols():
         """ deq-Jsonからlast, preclose等を抽出 """
         p = self.deq_picker(deq_json, p)
         for key in p.keys():
-            self.DP[k][symbol][key] = p[key]
+            self.DP[self.kds_acs_sym][symbol][key] = p[key]
 
         """ 直接上書きするので意味のある戻り値は返さない """
         return True
@@ -433,12 +427,11 @@ class Symbols():
         一時ファイルの有効期限内ならばそれを読み込む場合がある
 
         """
-        k = "accessible-" + self.kds_symbols
-        if k in self.DP:
+        if self.kds_acs_sym in self.DP:
             """ すでに取得済みなら実施しない """
-            return self.DP[k]
+            return self.DP[self.kds_acs_sym]
 
-        self.DP[k] = {}
+        self.DP[self.kds_acs_sym] = {}
         savefile = self.kg_dat_dir + '/' + self.kds_crt_dat_nm
         if self.kds_crt_dat_lt:
             file_avail = self.file_timestamp_delay(savefile) / 60
@@ -451,14 +444,14 @@ class Symbols():
                 for key in accessible_symbols_json.keys():
                     setattr(self, key, accessible_symbols_json[key])
 
-                return sorted(self.DP[k].keys())
+                return sorted(self.DP[self.kds_acs_sym].keys())
 
         for s in self.get_all_symbols():
             """ 各シンボルに対して3回のアクセスを実施して有用か否かを判断する """
             res = self.accessible_symbol(s)
             if res:
                 """ データを格納すべきと判断された場合 DP,DC にデータを格納 """
-                self.DP[k][s] = res[0]
+                self.DP[self.kds_acs_sym][s] = res[0]
                 self.DC[s]    = res[1]
 
         """ s_sec をDPに追加情報として記述する """
@@ -474,7 +467,7 @@ class Symbols():
             accessible_symbols_json = json.dumps({"DP": self.DP, "DC": self.DC})
             self.wf(savefile, accessible_symbols_json)
 
-        return sorted(self.DP[k].keys())
+        return sorted(self.DP[self.kds_acs_sym].keys())
 
 
     def daytasks(self):
@@ -627,21 +620,21 @@ class Symbols():
         return self.DP[self.kds_crt_cd][ctype]
 
 
-    def create_cd_templates_ses_ck_Sloop(self, S=None, k=None, m=None, s=None, e=None):
+    def create_cd_templates_ses_ck_Sloop(self, S=None, m=None, s=None, e=None):
         """ すべてシンボルに絡んだ条件式であること """
         if not S:
             """ ないとはおもうが Symbolが空の場合 """
             return True
 
-        if m != self.DP[k][S][self.kds_s_mst] and m != 'ALL':
+        if m != self.DP[self.kds_acs_sym][S][self.kds_s_mst] and m != 'ALL':
             """ mst 不一致で ALLでもない場合 """
             return True
 
-        if s != self.DP[k][S][self.kds_s_sec] and s != 'ALL':
+        if s != self.DP[self.kds_acs_sym][S][self.kds_s_sec] and s != 'ALL':
             """ sec 不一致で ALLでもない場合 """
             return True
 
-        if e != self.DP[k][S][self.kds_s_elk] and e != 'ALL':
+        if e != self.DP[self.kds_acs_sym][S][self.kds_s_elk] and e != 'ALL':
             """ slk 不一致で ALLでもない場合 """
             return True
 
@@ -678,10 +671,9 @@ class Symbols():
         if not m or not s or not e or not c:
             return False
 
-        k = "accessible-" + self.kds_symbols
         I = {"A":[], 't': 0, 'h':0, 'H':(0.5 - h) * 1e7, 'B':(0.5 - h) * 1e7,}
         for S in sorted(self.DC.keys()):
-            if self.create_cd_templates_ses_ck_Sloop(S, k, m, s, e):
+            if self.create_cd_templates_ses_ck_Sloop(S, m, s, e):
                 continue
 
             for t in  sorted(self.DC[S].keys()):
@@ -748,7 +740,6 @@ class Symbols():
         if not S or not ml or not sl or not el or not cl or not gl or not hl:
             return False
 
-        k = "accessible-" + self.kds_symbols
         score = {'t': 0,'c': 0, 'l':[],}
         for m in ml:
             for s in sl:
@@ -764,9 +755,9 @@ class Symbols():
                                 days = int(re.sub(r'[^0-9]*', '', c))
                                 tmp_min1_list = sorted(self.DC[S].keys())[-days:-1]
                                 tmp_c = self.kds_crt_d_set[0][3]
-                                malis = [self.DC[S][x][tmp_c] for x in tmp_min1_list] + [self.DP[k][S][self.kds_s_last]]
+                                malis = [self.DC[S][x][tmp_c] for x in tmp_min1_list] + [self.DP[self.kds_acs_sym][S][self.kds_s_last]]
                                 ma = sum(malis) / days
-                                cd = (self.DP[k][S][self.kds_s_last] / ma - 1) * 100
+                                cd = (self.DP[self.kds_acs_sym][S][self.kds_s_last] / ma - 1) * 100
                                 score['t'] += p['t']
 
                                 if h == 0:
@@ -778,7 +769,7 @@ class Symbols():
                                         c1 = re.search(r'(\d*)$', c).group(1)
                                         score['l'].append(
                                             "%10.1f %7.3f %7.3f, %s,%s,%4s,%2s,%d,%d"
-                                          % (self.DP[k][S][self.kds_s_last], p['B'], cd, m1, s1, e1, c1, g, h)
+                                          % (self.DP[self.kds_acs_sym][S][self.kds_s_last], p['B'], cd, m1, s1, e1, c1, g, h)
                                         )
 
                                 else:
@@ -790,7 +781,7 @@ class Symbols():
                                         c1 = re.search(r'(\d*)$', c).group(1)
                                         score['l'].append(
                                             "%10.1f %7.3f %7.3f, %s,%s,%4s,%2s,%d,%d"
-                                          % (self.DP[k][S][self.kds_s_last], p['B'], cd, m1, s1, e1, c1, g, h)
+                                          % (self.DP[self.kds_acs_sym][S][self.kds_s_last], p['B'], cd, m1, s1, e1, c1, g, h)
                                         )
 
         if score['c']:
@@ -806,25 +797,24 @@ class Symbols():
         if not self.DP[self.kds_crt_cd][ctype]:
             return False
 
-        k = "accessible-" + self.kds_symbols
         R = []
-        for S in sorted(self.DP[k].keys()):
-            if self.kds_s_mst in self.DP[k][S] and self.DP[k][S][self.kds_s_mst]:
-                mst_list = [self.DP[k][S][self.kds_s_mst], 'ALL']
+        for S in sorted(self.DP[self.kds_acs_sym].keys()):
+            if self.kds_s_mst in self.DP[self.kds_acs_sym][S] and self.DP[self.kds_acs_sym][S][self.kds_s_mst]:
+                mst_list = [self.DP[self.kds_acs_sym][S][self.kds_s_mst], 'ALL']
             else:
                 mst_list = ['ALL']
             
-            if self.kds_s_sec in self.DP[k][S] and self.DP[k][S][self.kds_s_sec]:
-                sec_list = [self.DP[k][S][self.kds_s_sec], 'ALL']
+            if self.kds_s_sec in self.DP[self.kds_acs_sym][S] and self.DP[self.kds_acs_sym][S][self.kds_s_sec]:
+                sec_list = [self.DP[self.kds_acs_sym][S][self.kds_s_sec], 'ALL']
             else:
                 sec_list = ['ALL']
 
-            if self.kds_s_elk in self.DP[k][S] and self.DP[k][S][self.kds_s_elk]:
-                elk_list = [self.DP[k][S][self.kds_s_elk], 'ALL']
+            if self.kds_s_elk in self.DP[self.kds_acs_sym][S] and self.DP[self.kds_acs_sym][S][self.kds_s_elk]:
+                elk_list = [self.DP[self.kds_acs_sym][S][self.kds_s_elk], 'ALL']
             else:
                 elk_list = ['ALL']
 
-            elk_list = [self.DP[k][S][self.kds_s_elk], 'ALL']
+            elk_list = [self.DP[self.kds_acs_sym][S][self.kds_s_elk], 'ALL']
             cd_list = list(itertools.chain.from_iterable(self.kds_crt_d_set[5:7]))
 
             gen_list = range(self.kds_cd_gen_num)
@@ -845,14 +835,14 @@ class Symbols():
             for r in sorted(R, key=lambda k: k['p'], reverse=True):
                 """ サマリ部分 """
                 report += "Symbol: %s Score: %8d Share: %7.3f%% Kinds: %2d Modified: %s\n" % (
-                    r['S'], r['c'], r['p'], len(r['l']), self.DP[k][r['S']][self.kds_deq_pickl[0]]
+                    r['S'], r['c'], r['p'], len(r['l']), self.DP[self.kds_acs_sym][r['S']][self.kds_deq_pickl[0]]
                 )
 
             report += '=================================================================\n'
             for r in sorted(R, key=lambda k: k['p'], reverse=True):
                 """ Full Description """
                 report += "Symbol: %s Score: %8d Share: %7.3f%% Kinds: %2d Modified: %s\n" % (
-                    r['S'], r['c'], r['p'], len(r['l']), self.DP[k][r['S']][self.kds_deq_pickl[0]]
+                    r['S'], r['c'], r['p'], len(r['l']), self.DP[self.kds_acs_sym][r['S']][self.kds_deq_pickl[0]]
                 )
                 report += "URL: %s\n" % (self.k2_jso_site + self.kds_sum_dir + r['S'])
                 report += json.dumps(sorted(r['l']), indent=4) + '\n'
