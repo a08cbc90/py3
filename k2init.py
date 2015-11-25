@@ -11,13 +11,13 @@ if __name__ != '__main__':
 
 import K2
 C = K2.Gen()
-print("JsonLoaded?: " + C.ht_url)
+C.klogin()
 g = C.get_accessible_symbols()
-C.add_crts_gains()
+C.daytasks()
 #print(C.DP)
 exit()
 """ 確認済み関数
-C.klogin()
+C.mail()
 print(C.ht_counter_print())
 g = C.get_accessible_symbols()
 h = C.download_k2_summary(Z)
