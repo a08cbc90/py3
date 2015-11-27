@@ -850,12 +850,18 @@ class Symbols():
             report = re.sub(r'[\[\]]\n', '', report, self.k2_re)
             self.mail("定時集計結果", report)
             self.logi(report)
-            
 
 
+    def news_list(self):
+        pass
 
 
+    def news_all(self):
+        pass
 
+
+    def news_article(self, id=0):
+        pass
 
 
 
