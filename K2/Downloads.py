@@ -483,6 +483,7 @@ class Symbols():
             self.search_cd_match(ctype)
 
         for w in range(6):
+            """日中に何となく決めた回数 6回"""
             for ctype in range(1):
                 if modified_sec < next_clock:
                     """ タイミング調整 """
